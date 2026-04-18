@@ -121,13 +121,14 @@ export async function sendPaymentInstructions(opts: { name: string; email: strin
 }
 
 // ── Welcome / partner activated ─────────────────────────────────────────────
-export async function sendWelcomePartner(opts: { name: string; email: string; equityPct: number; amount: number }) {
-  const dashUrl  = `${APP_URL}/dashboard`;
+export async function sendWelcomePartner(opts: { name: string; email: string; equityPct: number; amount: number; setupUrl?: string }) {
+  const dashUrl   = `${APP_URL}/dashboard`;
+  const actionUrl = opts.setupUrl ?? dashUrl;
   const formatted = new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(opts.amount);
   await sendEmail({
     to: opts.email,
     subject: "Welcome to Mizark Global — you are now a partner",
-    text: `Assalamu Alaikum ${opts.name},\n\nAlhamdulillah! Your investment has been confirmed and you are now an official Musharakah partner of Mizark Global.\n\nInvestment: ${formatted}\nEquity stake: ${opts.equityPct.toFixed(3)}%\n\nAccess your dashboard: ${dashUrl}\n\n— Mizark Global Team`,
+    text: `Assalamu Alaikum ${opts.name},\n\nAlhamdulillah! Your investment has been confirmed and you are now an official Musharakah partner of Mizark Global.\n\nInvestment: ${formatted}\nEquity stake: ${opts.equityPct.toFixed(3)}%\n\nSet up your account to access your dashboard:\n${actionUrl}\n\n— Mizark Global Team`,
     html: baseEmail(`
       <p style="font-size:16px;margin-top:0">Assalamu Alaikum <strong>${opts.name}</strong>,</p>
       <p>Alhamdulillah! Your investment has been confirmed. <strong>Welcome to the Mizark Global family.</strong></p>
@@ -140,7 +141,30 @@ export async function sendWelcomePartner(opts: { name: string; email: string; eq
           <tr><td style="padding:4px 0;color:#6b7280">Distributions</td><td style="text-align:right">Quarterly</td></tr>
         </table>
       </div>
-      <p style="margin:28px 0"><a href="${dashUrl}" style="display:inline-block;background:#1a3a2a;color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px">Access Your Dashboard →</a></p>
+      <p style="color:#6b7280;font-size:14px">Set up your password or sign in with Google to access your partner dashboard.</p>
+      <p style="margin:28px 0"><a href="${actionUrl}" style="display:inline-block;background:#1a3a2a;color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px">Set Up Your Account →</a></p>
+      <p style="color:#9ca3af;font-size:12px">This link expires in 24 hours. After setup you can sign in at <a href="${APP_URL}/login" style="color:#9ca3af">${APP_URL}/login</a></p>
+      <p style="color:#9ca3af;font-size:13px;margin-top:32px">— Mizark Global Partnership Team</p>
+    `),
+  });
+}
+
+// ── Admin invite ────────────────────────────────────────────────────────────
+export async function sendAdminInvite(opts: { name?: string; email: string; invitedBy: string; loginUrl: string }) {
+  const displayName = opts.name || opts.email;
+  await sendEmail({
+    to: opts.email,
+    subject: "You've been invited as a Mizark Global admin",
+    text: `Assalamu Alaikum ${displayName},\n\n${opts.invitedBy} has invited you to access the Mizark Global Partner Portal as an admin.\n\nClick the link below to accept and sign in:\n${opts.loginUrl}\n\nThis link expires in 24 hours.\n\n— Mizark Global Team`,
+    html: baseEmail(`
+      <p style="font-size:16px;margin-top:0">Assalamu Alaikum${opts.name ? ` <strong>${opts.name}</strong>` : ""},</p>
+      <p style="color:#6b7280"><strong>${opts.invitedBy}</strong> has invited you to access the Mizark Global Partner Portal as an administrator.</p>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin:24px 0">
+        <p style="margin:0 0 4px;font-weight:600;color:#15803d;font-size:13px;text-transform:uppercase;letter-spacing:0.5px">Admin Access</p>
+        <p style="margin:0;font-size:14px;color:#374151">You will have full access to the admin panel — partners, financials, distributions, and settings.</p>
+      </div>
+      <p style="margin:28px 0"><a href="${opts.loginUrl}" style="display:inline-block;background:#1a3a2a;color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px">Accept Invitation →</a></p>
+      <p style="color:#9ca3af;font-size:12px">This link expires in 24 hours. If you did not expect this invitation, you can safely ignore this email.</p>
       <p style="color:#9ca3af;font-size:13px;margin-top:32px">— Mizark Global Partnership Team</p>
     `),
   });

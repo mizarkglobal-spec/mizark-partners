@@ -2,6 +2,158 @@
 import { useEffect, useState } from "react";
 import { fmt } from "@/lib/format";
 
+// ── Admin Users ───────────────────────────────────────────────────────────────
+
+interface AdminUser {
+  id: string;
+  email: string;
+  name: string | null;
+  status: "invited" | "active" | "revoked";
+  invited_by: string | null;
+  invited_at: string;
+  activated_at: string | null;
+}
+
+function AdminUsersSection() {
+  const [admins, setAdmins]       = useState<AdminUser[]>([]);
+  const [loading, setLoading]     = useState(true);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteName, setInviteName]   = useState("");
+  const [inviting, setInviting]   = useState(false);
+  const [revoking, setRevoking]   = useState<string | null>(null);
+  const [feedback, setFeedback]   = useState("");
+
+  function load() {
+    setLoading(true);
+    fetch("/api/admin/admins")
+      .then((r) => r.json())
+      .then((d) => { setAdmins(d.admins ?? []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }
+
+  useEffect(() => { load(); }, []);
+
+  async function handleInvite(e: React.FormEvent) {
+    e.preventDefault();
+    setFeedback("");
+    setInviting(true);
+    try {
+      const res = await fetch("/api/admin/admins", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: inviteEmail, name: inviteName }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setFeedback("Invite sent!");
+      setInviteEmail("");
+      setInviteName("");
+      load();
+    } catch (e: any) {
+      setFeedback(e.message ?? "Failed to invite");
+    } finally {
+      setInviting(false);
+      setTimeout(() => setFeedback(""), 4000);
+    }
+  }
+
+  async function handleRevoke(id: string) {
+    if (!confirm("Revoke this admin's access?")) return;
+    setRevoking(id);
+    await fetch(`/api/admin/admins/${id}`, { method: "DELETE" }).catch(() => {});
+    setRevoking(null);
+    load();
+  }
+
+  const statusBadge: Record<string, string> = {
+    invited: "bg-amber-900/30 text-amber-300 border border-amber-700/30",
+    active:  "bg-emerald-900/30 text-emerald-300 border border-emerald-700/30",
+    revoked: "bg-red-900/20 text-red-400 border border-red-700/20",
+  };
+
+  return (
+    <div className="bg-[#1a3a2a] border border-white/10 rounded-2xl p-5 space-y-5 col-span-2">
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+          <svg className="w-4 h-4 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </div>
+        <h2 className="text-white font-semibold text-sm">Admin Users</h2>
+      </div>
+
+      {/* Invite form */}
+      <form onSubmit={handleInvite} className="flex gap-2 flex-wrap">
+        <input
+          type="text"
+          value={inviteName}
+          onChange={(e) => setInviteName(e.target.value)}
+          placeholder="Name (optional)"
+          className="flex-1 min-w-[140px] bg-[#0f2a1e] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#74c69d]/50 transition-colors placeholder:text-white/30"
+        />
+        <input
+          type="email"
+          value={inviteEmail}
+          onChange={(e) => setInviteEmail(e.target.value)}
+          placeholder="Email address"
+          required
+          className="flex-[2] min-w-[180px] bg-[#0f2a1e] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#74c69d]/50 transition-colors placeholder:text-white/30"
+        />
+        <button
+          type="submit"
+          disabled={inviting}
+          className="px-5 py-2.5 bg-[#74c69d] hover:bg-[#5dbc89] disabled:opacity-50 text-[#0f2a1e] font-bold text-sm rounded-xl transition-colors whitespace-nowrap"
+        >
+          {inviting ? "Sending…" : "Send Invite"}
+        </button>
+      </form>
+
+      {feedback && (
+        <p className={`text-xs px-1 ${feedback === "Invite sent!" ? "text-[#74c69d]" : "text-red-400"}`}>
+          {feedback}
+        </p>
+      )}
+
+      {/* List */}
+      {loading ? (
+        <div className="flex justify-center py-4">
+          <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+        </div>
+      ) : admins.length === 0 ? (
+        <p className="text-white/30 text-xs">No additional admins invited yet.</p>
+      ) : (
+        <div className="space-y-2">
+          {admins.map((a) => (
+            <div key={a.id} className="flex items-center gap-3 bg-[#0f2a1e] rounded-xl px-4 py-3">
+              <div className="flex-1 min-w-0">
+                <div className="text-white text-sm font-medium truncate">{a.name || a.email}</div>
+                {a.name && <div className="text-white/40 text-xs truncate">{a.email}</div>}
+              </div>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusBadge[a.status]}`}>
+                {a.status}
+              </span>
+              {a.status !== "revoked" && (
+                <button
+                  onClick={() => handleRevoke(a.id)}
+                  disabled={revoking === a.id}
+                  className="text-white/30 hover:text-red-400 transition-colors text-xs ml-1"
+                  title="Revoke access"
+                >
+                  {revoking === a.id ? "…" : "Revoke"}
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className="text-white/20 text-xs">
+        Invited admins receive a magic link via email. They will have full admin access once they sign in.
+      </p>
+    </div>
+  );
+}
+
 const SETUP_SQL = `-- Run this once in your Supabase SQL editor
 CREATE TABLE IF NOT EXISTS program_config (
   id      int PRIMARY KEY,
@@ -332,6 +484,8 @@ export default function AdminSettingsPage() {
             <div className="text-white/30 text-xs">Settings saved to Supabase <code className="bg-white/5 px-1.5 py-0.5 rounded">program_config</code> table.</div>
           </div>
         </div>
+
+        <AdminUsersSection />
 
       </div>
     </div>

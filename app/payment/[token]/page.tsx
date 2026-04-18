@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { fmt, equityForAmount } from "@/lib/format";
+import MizarkLogo from "@/components/MizarkLogo";
 
 interface Partner {
   id: string;
@@ -127,10 +128,7 @@ export default function PaymentPage() {
       {/* Nav */}
       <div className="px-5 sm:px-8 py-4 border-b border-white/[0.07]">
         <div className="max-w-lg mx-auto flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg,#d4a843,#c49a38)" }}>
-            <span className="text-[#0f2a1e] font-black text-xs">M</span>
-          </div>
-          <span className="text-white font-bold tracking-tight">Mizark Global</span>
+          <MizarkLogo size="sm" theme="dark" />
           <div className="ml-auto flex items-center gap-1.5 text-white/30 text-xs">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />

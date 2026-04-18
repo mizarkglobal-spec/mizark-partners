@@ -168,8 +168,13 @@ export default function DashboardSidebar({ partnerName, equityPct }: Props) {
           </svg>
         </button>
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[#0f2a1e] flex items-center justify-center">
-            <span className="text-[#d4a843] font-black text-xs">M</span>
+          <div
+            className="w-7 h-7 rounded-[7px] flex items-center justify-center"
+            style={{ background: "linear-gradient(145deg,#0c2016,#132d20)", border: "1.5px solid rgba(212,168,67,0.35)" }}
+          >
+            <svg viewBox="0 0 26 20" fill="none" className="w-[13px] h-[10px]" aria-hidden="true">
+              <path d="M2 18V2L13 11L24 2V18" stroke="#d4a843" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </div>
           <span className="text-[#111827] font-bold text-sm">Mizark Global</span>
         </div>

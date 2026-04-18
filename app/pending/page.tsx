@@ -1,4 +1,5 @@
 import Link from "next/link";
+import MizarkLogo from "@/components/MizarkLogo";
 
 export default function PendingPage() {
   return (
@@ -18,17 +19,8 @@ export default function PendingPage() {
 
       <div className="max-w-md w-full relative">
         {/* Logo */}
-        <div className="flex items-center gap-3 justify-center mb-8">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg,#d4a843,#c49a38)" }}
-          >
-            <span className="text-[#0f2a1e] font-black text-base">M</span>
-          </div>
-          <div>
-            <div className="text-white font-bold text-lg leading-none tracking-tight">Mizark Global</div>
-            <div className="text-[#74c69d] text-[10px] uppercase tracking-widest">Partner Portal</div>
-          </div>
+        <div className="flex justify-center mb-8">
+          <MizarkLogo subtitle="Partner Portal" theme="dark" />
         </div>
 
         <div className="bg-[#1a3a2a] border border-white/10 rounded-3xl p-8 shadow-2xl text-center">

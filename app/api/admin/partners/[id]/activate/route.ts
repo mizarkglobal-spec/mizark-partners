@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { sendWelcomePartner } from "@/lib/email";
 import { equityForAmount } from "@/lib/format";
+import { createAdminClient } from "@/lib/supabase/server";
+
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://partners.mizarkglobal.com";
 
 export async function POST(
   req: NextRequest,
@@ -51,13 +54,29 @@ export async function POST(
       })
     ).catch(console.error);
 
-    // Welcome email (sendEmail has an 8s timeout, so this won't hang indefinitely)
+    // Generate a magic link so partner can set up their account (password or Google)
+    const adminDb = createAdminClient();
+    let setupUrl: string | undefined;
+    try {
+      const { data: linkData } = await adminDb.auth.admin.generateLink({
+        type: "magiclink",
+        email: partner.email,
+        options: {
+          redirectTo: `${APP_URL}/api/auth/callback?next=/setup-account`,
+        },
+      });
+      setupUrl = linkData?.properties?.action_link ?? undefined;
+    } catch (e) {
+      console.error("[activate] generate link error:", e);
+    }
+
     const equityPct = equityForAmount(partner.investment_amount);
     await sendWelcomePartner({
       name: partner.name,
       email: partner.email,
       equityPct,
       amount: partner.investment_amount,
+      setupUrl,
     }).catch(console.error);
 
     return NextResponse.json({ ok: true });

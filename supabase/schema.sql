@@ -161,6 +161,20 @@ CREATE TABLE IF NOT EXISTS program_config (
 INSERT INTO program_config (id, settings) VALUES (1, '{}'::jsonb)
 ON CONFLICT (id) DO NOTHING;
 
+-- ── Admin Users (invited admins beyond the primary ADMIN_EMAIL) ──────────────
+CREATE TABLE admin_users (
+  id            uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  email         text NOT NULL UNIQUE,
+  name          text,
+  invited_by    text,                   -- email of admin who invited
+  status        text NOT NULL DEFAULT 'invited'
+                CHECK (status IN ('invited','active','revoked')),
+  invited_at    timestamptz NOT NULL DEFAULT now(),
+  activated_at  timestamptz
+);
+CREATE INDEX admin_users_email_idx  ON admin_users (email);
+CREATE INDEX admin_users_status_idx ON admin_users (status);
+
 -- ── Useful views ─────────────────────────────────────────────────────────────
 CREATE OR REPLACE VIEW partner_overview AS
 SELECT

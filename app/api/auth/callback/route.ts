@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/server";
 
 export async function GET(req: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://partners.mizarkglobal.com";
@@ -19,10 +20,34 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${appUrl}/login?error=invalid_code`);
     }
 
-    // Redirect admins to admin panel
     const { data: { user } } = await supabase.auth.getUser();
-    if (user?.email === process.env.ADMIN_EMAIL) {
+    if (!user?.email) {
+      return NextResponse.redirect(`${appUrl}/login?error=no_user`);
+    }
+
+    // Primary admin
+    if (user.email === process.env.ADMIN_EMAIL) {
       return NextResponse.redirect(`${appUrl}/admin`);
+    }
+
+    // Invited admin — activate on first login and redirect to admin panel
+    const db = createAdminClient();
+    const { data: adminUser } = await db
+      .from("admin_users")
+      .select("id, status")
+      .eq("email", user.email)
+      .maybeSingle();
+
+    if (adminUser) {
+      if (adminUser.status === "invited") {
+        await db
+          .from("admin_users")
+          .update({ status: "active", activated_at: new Date().toISOString() })
+          .eq("id", adminUser.id);
+      }
+      if (adminUser.status !== "revoked") {
+        return NextResponse.redirect(`${appUrl}/admin`);
+      }
     }
 
     const redirectUrl = next.startsWith("/") ? `${appUrl}${next}` : `${appUrl}/dashboard`;

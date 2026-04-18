@@ -540,10 +540,12 @@ export default async function LandingPage() {
         <div className="max-w-5xl mx-auto px-5 sm:px-8 py-8 flex flex-col md:flex-row items-center justify-between gap-5">
           <div className="flex items-center gap-3">
             <div
-              className="w-7 h-7 rounded-[8px] flex items-center justify-center"
-              style={{ background: "rgba(212,168,67,0.15)", border: "1px solid rgba(212,168,67,0.2)" }}
+              className="w-7 h-7 rounded-[8px] flex items-center justify-center flex-shrink-0"
+              style={{ background: "linear-gradient(145deg,#0c2016,#132d20)", border: "1.5px solid rgba(212,168,67,0.35)" }}
             >
-              <span className="text-[#d4a843] font-black text-xs">M</span>
+              <svg viewBox="0 0 26 20" fill="none" className="w-[13px] h-[10px]" aria-hidden="true">
+                <path d="M2 18V2L13 11L24 2V18" stroke="#d4a843" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
             <div>
               <p className="text-white/60 text-[13px] font-semibold">{agmt.company_full_name}</p>

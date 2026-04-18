@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import MizarkLogo from "@/components/MizarkLogo";
 
 type Step1 = { name: string; email: string; phone: string; location: string };
 type Step2 = {
@@ -195,14 +196,8 @@ export default function ApplyPage() {
     >
       {/* Nav */}
       <div className="flex items-center justify-between px-5 sm:px-8 py-4 border-b border-white/[0.07]">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div
-            className="w-8 h-8 rounded-xl flex items-center justify-center"
-            style={{ background: "linear-gradient(135deg,#d4a843,#c49a38)" }}
-          >
-            <span className="text-[#0f2a1e] font-black text-xs">M</span>
-          </div>
-          <span className="text-white font-bold text-sm tracking-tight">Mizark Global</span>
+        <Link href="/">
+          <MizarkLogo size="sm" theme="dark" />
         </Link>
         <Link href="/" className="text-white/40 hover:text-white/70 text-sm transition-colors">
           ← Back
