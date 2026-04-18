@@ -24,7 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       <AdminSidebar adminEmail={user.email} isPrimary={isPrimary} />
       <div className="flex-1 flex flex-col min-w-0">
         <AdminHeader adminEmail={user.email} isPrimary={isPrimary} />
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto pt-14 lg:pt-0">
           {children}
         </main>
       </div>

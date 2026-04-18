@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import MizarkLogo from "@/components/MizarkLogo";
@@ -123,22 +124,34 @@ interface Props {
 
 export default function AdminSidebar({ adminEmail, isPrimary }: Props) {
   const pathname = usePathname();
-  const router   = useRouter();
-  const supabase = createClient();
+  const router = useRouter();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const initials = adminEmail.split("@")[0].slice(0, 2).toUpperCase();
 
   async function handleLogout() {
+    const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/login");
   }
 
-  return (
-    <aside className="w-64 flex-shrink-0 bg-[#0f2a1e] min-h-screen flex flex-col border-r border-white/10">
-      <div className="p-6 border-b border-white/10">
+  const navContent = (
+    <>
+      {/* Logo */}
+      <div className="p-5 border-b border-white/10 flex items-center justify-between flex-shrink-0">
         <MizarkLogo subtitle="Admin" />
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 transition-colors text-white/50"
+          aria-label="Close menu"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
+      {/* Nav */}
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
@@ -146,6 +159,7 @@ export default function AdminSidebar({ adminEmail, isPrimary }: Props) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => setMobileOpen(false)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                 active
                   ? "bg-[#2d6a4f] text-white"
@@ -183,6 +197,60 @@ export default function AdminSidebar({ adminEmail, isPrimary }: Props) {
           Sign Out
         </button>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile top bar */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 flex items-center px-4 gap-3 border-b border-white/10" style={{ background: "#0f2a1e" }}>
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="p-1.5 -ml-1 rounded-lg hover:bg-white/10 transition-colors"
+          aria-label="Open menu"
+        >
+          <svg className="w-5 h-5 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+        <div className="flex items-center gap-2">
+          <div
+            className="w-7 h-7 rounded-[7px] flex items-center justify-center"
+            style={{ background: "linear-gradient(145deg,#0c2016,#132d20)", border: "1.5px solid rgba(212,168,67,0.35)" }}
+          >
+            <svg viewBox="0 0 26 20" fill="none" className="w-[13px] h-[10px]" aria-hidden="true">
+              <path d="M2 18V2L13 11L24 2V18" stroke="#d4a843" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </div>
+          <span className="text-white font-bold text-sm">Mizark Admin</span>
+        </div>
+        <div className="ml-auto flex items-center gap-2">
+          <span className="bg-[#d4a843]/15 text-[#d4a843] text-[9px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full border border-[#d4a843]/20">
+            {isPrimary ? "Primary" : "Admin"}
+          </span>
+        </div>
+      </div>
+
+      {/* Mobile backdrop */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — drawer on mobile, static on desktop */}
+      <aside
+        className={`
+          fixed top-0 left-0 h-full z-50 w-64 flex flex-col border-r border-white/10
+          transform transition-transform duration-200 ease-in-out
+          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}
+          lg:relative lg:translate-x-0 lg:flex-shrink-0 lg:min-h-screen lg:z-auto lg:transform-none
+        `}
+        style={{ background: "#0f2a1e" }}
+      >
+        {navContent}
+      </aside>
+    </>
   );
 }

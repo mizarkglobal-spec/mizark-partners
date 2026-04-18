@@ -19,7 +19,7 @@ export default function AdminHeader({ adminEmail, isPrimary }: Props) {
   }
 
   return (
-    <header className="flex items-center justify-end gap-3 px-8 py-3 bg-[#0f2a1e] border-b border-white/[0.08] flex-shrink-0">
+    <header className="hidden lg:flex items-center justify-end gap-3 px-8 py-3 bg-[#0f2a1e] border-b border-white/[0.08] flex-shrink-0">
 
       {/* Identity card */}
       <div className="flex items-center gap-3 bg-white/[0.04] border border-white/10 rounded-xl px-3.5 py-2">

@@ -555,9 +555,11 @@ export default async function LandingPage() {
           <p className="text-white/20 text-[11px] text-center max-w-sm">
             Private placement. Not a public offer. Investment involves risk. Past performance does not guarantee future results.
           </p>
-          <div className="flex gap-5">
+          <div className="flex flex-wrap gap-5 justify-center">
             <Link href="/apply" className="text-white/30 hover:text-white/60 text-[13px] transition-colors">Apply</Link>
             <Link href="/login" className="text-white/30 hover:text-white/60 text-[13px] transition-colors">Partner Login</Link>
+            <Link href="/privacy" className="text-white/30 hover:text-white/60 text-[13px] transition-colors">Privacy Policy</Link>
+            <Link href="/terms" className="text-white/30 hover:text-white/60 text-[13px] transition-colors">Terms of Service</Link>
           </div>
         </div>
       </footer>
