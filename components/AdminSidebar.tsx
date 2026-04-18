@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import MizarkLogo from "@/components/MizarkLogo";
+import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   {
@@ -115,8 +116,22 @@ const navItems = [
   },
 ];
 
-export default function AdminSidebar() {
+interface Props {
+  adminEmail: string;
+  isPrimary: boolean;
+}
+
+export default function AdminSidebar({ adminEmail, isPrimary }: Props) {
   const pathname = usePathname();
+  const router   = useRouter();
+  const supabase = createClient();
+
+  const initials = adminEmail.split("@")[0].slice(0, 2).toUpperCase();
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
 
   return (
     <aside className="w-64 flex-shrink-0 bg-[#0f2a1e] min-h-screen flex flex-col border-r border-white/10">
@@ -124,7 +139,7 @@ export default function AdminSidebar() {
         <MizarkLogo subtitle="Admin" />
       </div>
 
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const active = pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href));
           return (
@@ -144,8 +159,29 @@ export default function AdminSidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-white/10">
-        <div className="text-white/30 text-xs text-center">Admin Panel v1.0</div>
+      {/* Admin identity + logout */}
+      <div className="p-4 border-t border-white/10 space-y-2 flex-shrink-0">
+        <div className="flex items-center gap-2.5 bg-white/[0.04] border border-white/[0.07] rounded-xl px-3 py-2.5">
+          <div
+            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ background: "linear-gradient(145deg,#1a3a2a,#2d6a4f)" }}
+          >
+            <span className="text-[#74c69d] text-[11px] font-bold">{initials}</span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-white/70 text-xs font-medium truncate">{adminEmail}</div>
+            <div className="text-white/30 text-[10px] mt-0.5">{isPrimary ? "Primary Admin" : "Admin"}</div>
+          </div>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm text-white/40 hover:text-white hover:bg-white/5 transition-colors"
+        >
+          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          Sign Out
+        </button>
       </div>
     </aside>
   );
