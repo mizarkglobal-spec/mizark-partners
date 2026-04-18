@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="goldBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d4a843"/>
+      <stop offset="100%" stop-color="#c49a38"/>
+    </linearGradient>
+  </defs>
+  <!-- Gold badge -->
+  <rect width="64" height="64" rx="14" fill="url(#goldBg)"/>
+  <!-- M mark in dark green -->
+  <svg x="13" y="19" width="38" height="26" viewBox="0 0 26 20">
+    <path d="M2 18V2L13 11L24 2V18" stroke="#0f2a1e" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  </svg>
+</svg>
