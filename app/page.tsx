@@ -558,6 +558,7 @@ export default async function LandingPage() {
           <div className="flex flex-wrap gap-5 justify-center">
             <Link href="/apply" className="text-white/30 hover:text-white/60 text-[13px] transition-colors">Apply</Link>
             <Link href="/login" className="text-white/30 hover:text-white/60 text-[13px] transition-colors">Partner Login</Link>
+            <Link href="/musharaka" className="text-white/30 hover:text-white/60 text-[13px] transition-colors">What is Musharakah?</Link>
             <Link href="/privacy" className="text-white/30 hover:text-white/60 text-[13px] transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="text-white/30 hover:text-white/60 text-[13px] transition-colors">Terms of Service</Link>
           </div>

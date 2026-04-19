@@ -126,7 +126,7 @@ export default async function AgreementPage({ params }: Props) {
                 </div>
                 <div>
                   <h1 className="text-base font-bold text-gray-900">Musharakah Partnership Agreement</h1>
-                  <p className="text-gray-400 text-xs">Version 1.0 · Prepared for {partner.name}</p>
+                  <p className="text-gray-400 text-xs">Version 1.0 · Prepared for {partner.name} · <Link href="/musharaka" target="_blank" className="text-[#40916c] hover:underline">What is Musharakah?</Link></p>
                 </div>
               </div>
               <span className="text-xs bg-gray-100 text-gray-500 px-3 py-1 rounded-full">Read-only</span>
@@ -149,21 +149,15 @@ export default async function AgreementPage({ params }: Props) {
               </div>
               <div>
                 <div className="text-xs uppercase tracking-widest text-gray-400 font-semibold mb-3">Mizark Global</div>
-                {(agreement as any).countersigned_at ? (
-                  <>
-                    <div className="text-3xl text-[#0f2a1e] border-b border-gray-200 pb-2 mb-2" style={{ fontFamily: "'Brush Script MT', cursive" }}>
-                      {(agreement as any).countersigned_by || ceoName}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Countersigned · {fmt.date((agreement as any).countersigned_at)}
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <div className="border-b border-dashed border-gray-300 pb-6 mb-2" />
-                    <div className="text-xs text-amber-600 font-medium">Pending countersignature from Mizark Global</div>
-                  </>
-                )}
+                <div className="text-3xl text-[#0f2a1e] border-b border-gray-200 pb-2 mb-2" style={{ fontFamily: "'Brush Script MT', cursive" }}>
+                  {(agreement as any).countersigned_by || ceoName}
+                </div>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <svg className="w-3.5 h-3.5 text-[#40916c]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-xs text-[#40916c] font-medium">Pre-signed · Authorised signatory</span>
+                </div>
               </div>
             </div>
           </div>

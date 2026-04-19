@@ -45,7 +45,9 @@ CREATE TABLE partners (
   paystack_ref      text,                   -- payment reference
   created_at        timestamptz NOT NULL DEFAULT now(),
   activated_at      timestamptz,
-  notes             text
+  notes             text,
+  kyc_data          jsonb,                   -- KYC onboarding fields (address, ID, bank, NOK, AML)
+  onboarding_completed boolean NOT NULL DEFAULT false
 );
 CREATE INDEX partners_user_id_idx  ON partners (user_id);
 CREATE INDEX partners_status_idx   ON partners (status);
