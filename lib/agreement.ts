@@ -146,30 +146,40 @@ export const DEFAULT_ARTICLES: Article[] = [
   },
   {
     num: "10",
-    title: "SHARIAH COMPLIANCE",
-    body: `10.1 This Agreement is structured as a Musharakah and shall at all times comply with Shariah principles.
+    title: "SHARIAH COMPLIANCE & BUSINESS PRINCIPLES",
+    body: `10.1 This Agreement is structured as a Musharakah and shall at all times comply with Shariah principles as the primary framework governing the relationship between the Parties.
 
-10.2 No interest (riba) shall be charged or paid under any circumstances.
+10.2 The entire business of {{company_name}} — including its products, services, revenue streams, expenditures, and partnerships — is guided by and operated in accordance with Islamic (Shariah) law.
 
-10.3 The business activities of {{company_name}} shall remain within Shariah-permissible sectors.
+10.3 No interest (riba) shall be charged, received, or paid under any circumstances, whether in connection with this Agreement or the underlying business operations.
 
-10.4 Any distribution of profits is conditional on the existence of real, audited profits and shall not be from capital.`,
+10.4 The business activities of {{company_name}} shall remain within Shariah-permissible (halal) sectors at all times. Any proposed new business activity that may be impermissible under Shariah shall be subject to review before adoption.
+
+10.5 Any distribution of profits is conditional on the existence of real, verified profits from lawful (halal) business activity and shall not be from capital.
+
+10.6 Both Parties affirm that the funds contributed under this Agreement are from halal (permissible) sources.`,
   },
   {
     num: "11",
     title: "DISPUTE RESOLUTION",
-    body: `11.1 The Parties shall endeavour to resolve any disputes amicably through good-faith negotiation.
+    body: `11.1 The Parties shall endeavour to resolve any disputes amicably through good-faith negotiation guided by Islamic principles of fairness and consultation (shura).
 
-11.2 If a dispute cannot be resolved within 30 days, it shall be referred to binding arbitration in {{arbitration_city}}, under the rules of the Lagos Court of Arbitration.
+11.2 If a dispute cannot be resolved within 30 days of written notice, it shall be referred to a Shariah court of competent jurisdiction for resolution in accordance with Islamic law.
 
-11.3 The arbitrator's decision shall be final and binding on both Parties.`,
+11.3 Where a Shariah court is not readily accessible to either Party, the dispute shall be referred to a mutually agreed Islamic arbitration panel — comprising at least one qualified Shariah scholar — applying Shariah principles. Each Party shall have equal input in the appointment of the panel.
+
+11.4 The decision of the Shariah court or Islamic arbitration panel shall be final and binding on both Parties.
+
+11.5 Nothing in this Article prevents either Party from seeking urgent interim relief from a Nigerian civil court where necessary to preserve rights pending Shariah resolution.`,
   },
   {
     num: "12",
     title: "GOVERNING LAW",
-    body: `12.1 This Agreement shall be governed by and construed in accordance with the laws of {{governing_law}}.
+    body: `12.1 This Agreement is primarily governed by and construed in accordance with Islamic (Shariah) law, which forms the foundational framework for all rights, obligations, and interpretations under this Agreement.
 
-12.2 Any proceedings arising from this Agreement shall be conducted in English.`,
+12.2 To the extent that any matter is not addressed by Shariah law or requires enforcement through civil courts, the laws of {{governing_law}} shall apply as the secondary governing framework.
+
+12.3 Any proceedings arising from this Agreement shall be conducted in English.`,
   },
   {
     num: "13",
@@ -378,7 +388,7 @@ export function buildAgreementPrintHtml(opts: {
     </div>
 
     <div class="footer">
-      This is a legally binding Musharakah agreement governed by ${c.governing_law}.<br>
+      This is a legally binding Musharakah agreement governed by Shariah law and the laws of ${c.governing_law}.<br>
       ${c.company_full_name} · partners.mizarkglobal.com<br>
       Document generated ${new Date().toLocaleDateString("en-NG", { day: "numeric", month: "long", year: "numeric" })}
     </div>
