@@ -50,6 +50,20 @@ export default function AdminApplicationsPage() {
       .catch(() => setProjYears(computeYearSummaries(PROJECTION_DEFAULTS)));
   }, []);
 
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`Delete application from ${name}? This cannot be undone.`)) return;
+    setActionLoading(`delete-${id}`);
+    const r = await fetch("/api/admin/applications", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    const d = await r.json();
+    if (!r.ok) alert(d.error);
+    else { setApps((prev) => prev.filter((a) => a.id !== id)); if (expandedId === id) setExpandedId(null); }
+    setActionLoading(null);
+  }
+
   async function handleApprove(id: string) {
     setActionLoading(id);
     const r = await fetch(`/api/admin/applications/${id}/approve`, { method: "POST" });
@@ -181,33 +195,45 @@ export default function AdminApplicationsPage() {
                       </td>
                       <td className="px-4 py-3 text-white/50">{fmt.shortDate(app.created_at)}</td>
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
-                        {app.status === "pending" && (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleApprove(app.id)}
-                              disabled={actionLoading === app.id}
-                              className="bg-[#40916c] hover:bg-[#2d6a4f] disabled:opacity-50 text-white text-xs px-3 py-1.5 rounded-lg transition-colors"
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {app.status === "pending" && (
+                            <>
+                              <button
+                                onClick={() => handleApprove(app.id)}
+                                disabled={actionLoading === app.id}
+                                className="bg-[#40916c] hover:bg-[#2d6a4f] disabled:opacity-50 text-white text-xs px-3 py-1.5 rounded-lg transition-colors"
+                              >
+                                {actionLoading === app.id ? "..." : "Approve"}
+                              </button>
+                              <button
+                                onClick={() => setRejectModal({ id: app.id, name: app.name })}
+                                className="bg-red-900/50 hover:bg-red-900/70 text-red-300 text-xs px-3 py-1.5 rounded-lg border border-red-700 transition-colors"
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                          {app.status === "approved" && app.pitch_token && (
+                            <a
+                              href={`/pitch/${app.pitch_token}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[#74c69d] text-xs hover:underline"
                             >
-                              {actionLoading === app.id ? "..." : "Approve"}
-                            </button>
-                            <button
-                              onClick={() => setRejectModal({ id: app.id, name: app.name })}
-                              className="bg-red-900/50 hover:bg-red-900/70 text-red-300 text-xs px-3 py-1.5 rounded-lg border border-red-700 transition-colors"
-                            >
-                              Reject
-                            </button>
-                          </div>
-                        )}
-                        {app.status === "approved" && app.pitch_token && (
-                          <a
-                            href={`/pitch/${app.pitch_token}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[#74c69d] text-xs hover:underline"
+                              View Pitch →
+                            </a>
+                          )}
+                          <button
+                            onClick={() => handleDelete(app.id, app.name)}
+                            disabled={actionLoading === `delete-${app.id}`}
+                            className="text-white/20 hover:text-red-400 disabled:opacity-50 transition-colors p-1"
+                            title="Delete application"
                           >
-                            View Pitch →
-                          </a>
-                        )}
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                     {expandedId === app.id && (
