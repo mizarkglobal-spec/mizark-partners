@@ -174,7 +174,7 @@ export default function MusharakaPage() {
               <h2 className="text-xl font-bold text-gray-900" style={{ letterSpacing: "-0.02em" }}>{section.title}</h2>
             </div>
             <div className="space-y-4 pl-1">
-              {section.content.map((block, bi) => {
+              {section.content.map((block: any, bi) => {
                 if (block.type === "p") return <p key={bi} className="text-gray-600 leading-relaxed">{block.text}</p>;
                 if (block.type === "highlight") return (
                   <div key={bi} className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl px-5 py-4">
@@ -188,7 +188,7 @@ export default function MusharakaPage() {
                 );
                 if (block.type === "list") return (
                   <div key={bi} className="space-y-3">
-                    {block.items!.map((item, ii) => (
+                    {block.items.map((item: any, ii: number) => (
                       <div key={ii} className="flex gap-3">
                         <div className="w-1.5 h-1.5 rounded-full bg-[#40916c] mt-2.5 flex-shrink-0" />
                         <div><span className="font-semibold text-gray-800">{item.heading}: </span><span className="text-gray-600">{item.detail}</span></div>
@@ -198,7 +198,7 @@ export default function MusharakaPage() {
                 );
                 if (block.type === "steps") return (
                   <div key={bi} className="space-y-5">
-                    {block.items!.map((item, ii) => (
+                    {block.items.map((item: any, ii: number) => (
                       <div key={ii} className="flex gap-4">
                         <div className="w-9 h-9 rounded-xl bg-[#0f2a1e] text-[#74c69d] text-xs font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
                           {item.step}
@@ -213,7 +213,7 @@ export default function MusharakaPage() {
                 );
                 if (block.type === "glossary") return (
                   <div key={bi} className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
-                    {block.items!.map((item, ii) => (
+                    {block.items.map((item: any, ii: number) => (
                       <div key={ii} className="py-3 px-4 flex gap-4">
                         <div className="w-36 flex-shrink-0 font-semibold text-[#0f2a1e] text-sm">{item.term}</div>
                         <div className="text-gray-500 text-sm">{item.def}</div>
