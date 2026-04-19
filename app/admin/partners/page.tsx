@@ -18,6 +18,8 @@ interface Partner {
   agreement_token: string | null;
   payment_token: string | null;
   partner_agreements: { id: string; signed_at: string | null; countersigned_at: string | null }[];
+  onboarding_completed: boolean;
+  kyc_data: Record<string, string> | null;
 }
 
 const statusColor = (s: string) => {
@@ -353,6 +355,46 @@ export default function AdminPartnersPage() {
                                     <div className="text-white/70 text-xs">{p.notes.slice(0, 200)}</div>
                                   </div>
                                 )}
+                              </div>
+                            )}
+
+                            {/* KYC Data */}
+                            {p.onboarding_completed && p.kyc_data && (
+                              <div className="pt-2 border-t border-white/5 space-y-3">
+                                <div className="text-white/40 text-xs uppercase tracking-widest">KYC / Partner Profile</div>
+                                <div className="grid sm:grid-cols-3 gap-3 text-xs">
+                                  {[
+                                    ["Address", [p.kyc_data.address_line1, p.kyc_data.address_city, p.kyc_data.address_state, p.kyc_data.address_country].filter(Boolean).join(", ")],
+                                    ["Postal Code", p.kyc_data.address_postal],
+                                    ["Date of Birth", p.kyc_data.date_of_birth],
+                                    ["Nationality", p.kyc_data.nationality],
+                                    ["WhatsApp", p.kyc_data.whatsapp_number],
+                                    ["ID Type", p.kyc_data.id_type],
+                                    ["ID Number", p.kyc_data.id_number],
+                                    ["Bank", p.kyc_data.bank_name],
+                                    ["Account Number", p.kyc_data.bank_account_number],
+                                    ["Account Name", p.kyc_data.bank_account_name],
+                                    ["Account Type", p.kyc_data.bank_account_type],
+                                    ["Next of Kin", p.kyc_data.nok_name],
+                                    ["NOK Relationship", p.kyc_data.nok_relationship],
+                                    ["NOK Phone", p.kyc_data.nok_phone],
+                                    ["Occupation", p.kyc_data.occupation],
+                                    ["Employer", p.kyc_data.employer],
+                                    ["Source of Funds", p.kyc_data.source_of_funds],
+                                  ].filter(([, v]) => v).map(([k, v]) => (
+                                    <div key={k as string} className="bg-[#0f2a1e] rounded-lg px-3 py-2">
+                                      <div className="text-white/30 mb-0.5">{k}</div>
+                                      <div className="text-white/80 break-all">{v}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            {!p.onboarding_completed && p.status === "active" && (
+                              <div className="pt-2 border-t border-white/5">
+                                <div className="text-xs text-amber-400/70 bg-amber-900/20 border border-amber-700/30 rounded-lg px-3 py-2">
+                                  Partner has not completed their KYC onboarding yet.
+                                </div>
                               </div>
                             )}
 

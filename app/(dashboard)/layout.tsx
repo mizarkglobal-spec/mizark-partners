@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import DashboardHeader from "@/components/DashboardHeader";
+import OnboardingBanner from "@/components/OnboardingBanner";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -15,14 +16,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   let { data: partner } = await db
     .from("partners")
-    .select("id, name, equity_pct, status, investment_amount, start_date")
+    .select("id, name, equity_pct, status, investment_amount, start_date, onboarding_completed")
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (!partner) {
     const { data: byEmail } = await db
       .from("partners")
-      .select("id, name, equity_pct, status, investment_amount, start_date")
+      .select("id, name, equity_pct, status, investment_amount, start_date, onboarding_completed")
       .eq("email", user.email!)
       .maybeSingle();
 
@@ -54,6 +55,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           startDate={partner.start_date}
         />
         <main className="flex-1 overflow-auto pt-14 lg:pt-0">
+          {!(partner as any).onboarding_completed && <OnboardingBanner />}
           {children}
         </main>
       </div>
