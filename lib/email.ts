@@ -128,7 +128,7 @@ export async function sendWelcomePartner(opts: { name: string; email: string; eq
   await sendEmail({
     to: opts.email,
     subject: "Welcome to Mizark Global — you are now a partner",
-    text: `Assalamu Alaikum ${opts.name},\n\nAlhamdulillah! Your investment has been confirmed and you are now an official Musharakah partner of Mizark Global.\n\nInvestment: ${formatted}\nEquity stake: ${opts.equityPct.toFixed(3)}%\n\nSet up your account to access your dashboard:\n${actionUrl}\n\n— Mizark Global Team`,
+    text: `Assalamu Alaikum ${opts.name},\n\nAlhamdulillah! Your investment has been confirmed and you are now an official Musharakah partner of Mizark Global.\n\nInvestment: ${formatted}\nEquity stake: ${opts.equityPct.toFixed(3)}%\n\nSet your password to access your dashboard (link expires in 24 hours):\n${actionUrl}\n\nAfter setup, sign in at ${APP_URL}/login with your email and password.\n\n— Mizark Global Team`,
     html: baseEmail(`
       <p style="font-size:16px;margin-top:0">Assalamu Alaikum <strong>${opts.name}</strong>,</p>
       <p>Alhamdulillah! Your investment has been confirmed. <strong>Welcome to the Mizark Global family.</strong></p>
@@ -141,9 +141,9 @@ export async function sendWelcomePartner(opts: { name: string; email: string; eq
           <tr><td style="padding:4px 0;color:#6b7280">Distributions</td><td style="text-align:right">Quarterly</td></tr>
         </table>
       </div>
-      <p style="color:#6b7280;font-size:14px">Set up your password or sign in with Google to access your partner dashboard.</p>
-      <p style="margin:28px 0"><a href="${actionUrl}" style="display:inline-block;background:#1a3a2a;color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px">Set Up Your Account →</a></p>
-      <p style="color:#9ca3af;font-size:12px">This link expires in 24 hours. After setup you can sign in at <a href="${APP_URL}/login" style="color:#9ca3af">${APP_URL}/login</a></p>
+      <p style="color:#6b7280;font-size:14px">Click the button below to set your password. Once set, you can sign in anytime with your email and password (or Google).</p>
+      <p style="margin:28px 0"><a href="${actionUrl}" style="display:inline-block;background:#1a3a2a;color:#fff;padding:14px 32px;border-radius:10px;text-decoration:none;font-weight:600;font-size:15px">Set Your Password →</a></p>
+      <p style="color:#9ca3af;font-size:12px">This link expires in 24 hours. After setup, sign in at <a href="${APP_URL}/login" style="color:#9ca3af">${APP_URL}/login</a> with your email and password.</p>
       <p style="color:#9ca3af;font-size:13px;margin-top:32px">— Mizark Global Partnership Team</p>
     `),
   });

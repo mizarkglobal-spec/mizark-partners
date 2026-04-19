@@ -1,7 +1,31 @@
+import { redirect } from "next/navigation";
+import { createClient, createAdminClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import MizarkLogo from "@/components/MizarkLogo";
 
-export default function PendingPage() {
+export default async function PendingPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (user) {
+    const db = createAdminClient();
+    let { data: partner } = await db
+      .from("partners")
+      .select("status")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!partner) {
+      const { data: byEmail } = await db
+        .from("partners")
+        .select("status")
+        .eq("email", user.email!)
+        .maybeSingle();
+      partner = byEmail;
+    }
+
+    if (partner?.status === "active") redirect("/dashboard");
+  }
   return (
     <div
       className="min-h-screen flex items-center justify-center px-4"

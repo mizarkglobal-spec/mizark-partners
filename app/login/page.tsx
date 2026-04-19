@@ -7,6 +7,8 @@ import MizarkLogo from "@/components/MizarkLogo";
 export default function LoginPage() {
   const supabase = createClient();
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<"magic" | "password">("magic");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
@@ -25,7 +27,7 @@ export default function LoginPage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleMagicLink(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     if (!email.trim() || !email.includes("@")) {
@@ -44,6 +46,25 @@ export default function LoginPage() {
       setSent(true);
     } catch (e: any) {
       setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handlePasswordLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    if (!email.trim() || !password) return;
+    setLoading(true);
+    try {
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      if (signInErr) throw signInErr;
+      window.location.href = "/dashboard";
+    } catch (e: any) {
+      setError(e.message ?? "Invalid email or password");
     } finally {
       setLoading(false);
     }
@@ -73,21 +94,34 @@ export default function LoginPage() {
         <div className="bg-white rounded-3xl p-8 shadow-2xl">
           {!sent ? (
             <>
-              <h1
-                className="text-2xl font-bold text-gray-900 mb-1"
-                style={{ letterSpacing: "-0.02em" }}
-              >
+              <h1 className="text-2xl font-bold text-gray-900 mb-1" style={{ letterSpacing: "-0.02em" }}>
                 Partner Sign In
               </h1>
-              <p className="text-gray-400 text-sm mb-7">
-                Enter your email to receive a secure login link.
+              <p className="text-gray-400 text-sm mb-6">
+                {mode === "magic" ? "Enter your email to receive a secure login link." : "Sign in with your email and password."}
               </p>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Mode toggle */}
+              <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6">
+                <button
+                  type="button"
+                  onClick={() => { setMode("magic"); setError(""); }}
+                  className={`flex-1 text-xs font-semibold py-2 rounded-lg transition-colors ${mode === "magic" ? "bg-white text-gray-900 shadow-sm" : "text-gray-400 hover:text-gray-600"}`}
+                >
+                  Email Link
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setMode("password"); setError(""); }}
+                  className={`flex-1 text-xs font-semibold py-2 rounded-lg transition-colors ${mode === "password" ? "bg-white text-gray-900 shadow-sm" : "text-gray-400 hover:text-gray-600"}`}
+                >
+                  Password
+                </button>
+              </div>
+
+              <form onSubmit={mode === "magic" ? handleMagicLink : handlePasswordLogin} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-600 mb-1.5">
-                    Email Address
-                  </label>
+                  <label className="block text-sm font-medium text-gray-600 mb-1.5">Email Address</label>
                   <input
                     type="email"
                     value={email}
@@ -98,6 +132,20 @@ export default function LoginPage() {
                     required
                   />
                 </div>
+
+                {mode === "password" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 mb-1.5">Password</label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Your password"
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#40916c]/30 focus:border-[#40916c] transition-colors"
+                      required
+                    />
+                  </div>
+                )}
 
                 {error && (
                   <div className="flex items-start gap-2.5 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
@@ -120,9 +168,9 @@ export default function LoginPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
-                      Sending link...
+                      {mode === "magic" ? "Sending link..." : "Signing in..."}
                     </span>
-                  ) : "Send Login Link →"}
+                  ) : mode === "magic" ? "Send Login Link →" : "Sign In →"}
                 </button>
               </form>
 
