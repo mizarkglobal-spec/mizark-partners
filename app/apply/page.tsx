@@ -3,23 +3,45 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import MizarkLogo from "@/components/MizarkLogo";
 
-type Step1 = { name: string; email: string; phone: string; location: string };
+type Step1 = { name: string; email: string; phone: string; country: string; state: string };
 type Step2 = {
   amount_intent: number | "";
   amount_custom: string;
-  motivation: string;
   prior_experience: boolean;
   referral_source: string;
 };
 type Step3 = { commit_lock: boolean; commit_risk: boolean; commit_halal: boolean };
 
 const AMOUNTS = [
-  { label: "₦500,000", value: 500000 },
-  { label: "₦1,000,000", value: 1000000 },
-  { label: "₦2,000,000", value: 2000000 },
-  { label: "₦5,000,000", value: 5000000 },
+  { label: "₦1,000,000", value: 1_000_000 },
+  { label: "₦2,000,000", value: 2_000_000 },
+  { label: "₦5,000,000", value: 5_000_000 },
+  { label: "₦10,000,000", value: 10_000_000 },
+  { label: "₦20,000,000", value: 20_000_000 },
   { label: "Other", value: -1 },
 ];
+
+const NIGERIAN_STATES = [
+  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue",
+  "Borno", "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu",
+  "FCT (Abuja)", "Gombe", "Imo", "Jigawa", "Kaduna", "Kano", "Katsina",
+  "Kebbi", "Kogi", "Kwara", "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo",
+  "Osun", "Oyo", "Plateau", "Rivers", "Sokoto", "Taraba", "Yobe", "Zamfara",
+];
+
+const COUNTRIES = [
+  { value: "Nigeria", label: "🇳🇬 Nigeria" },
+  { value: "United Kingdom", label: "🇬🇧 United Kingdom" },
+  { value: "United States", label: "🇺🇸 United States" },
+  { value: "Canada", label: "🇨🇦 Canada" },
+  { value: "Ghana", label: "🇬🇭 Ghana" },
+  { value: "Kenya", label: "🇰🇪 Kenya" },
+  { value: "South Africa", label: "🇿🇦 South Africa" },
+  { value: "UAE", label: "🇦🇪 UAE" },
+  { value: "Other", label: "🌍 Other" },
+];
+
+const MIN_INVESTMENT = 1_000_000;
 
 export default function ApplyPage() {
   const [step, setStep] = useState(1);
@@ -43,11 +65,10 @@ export default function ApplyPage() {
     return ((amount / totalPool) * totalEquityPct).toFixed(3);
   }
 
-  const [s1, setS1] = useState<Step1>({ name: "", email: "", phone: "", location: "" });
+  const [s1, setS1] = useState<Step1>({ name: "", email: "", phone: "", country: "Nigeria", state: "" });
   const [s2, setS2] = useState<Step2>({
     amount_intent: "",
     amount_custom: "",
-    motivation: "",
     prior_experience: false,
     referral_source: "",
   });
@@ -58,19 +79,31 @@ export default function ApplyPage() {
     return s2.amount_intent || 0;
   }
 
+  function handlePhone(raw: string) {
+    // Allow only digits, +, spaces, hyphens, parentheses
+    const cleaned = raw.replace(/[^\d+\s\-()]/g, "");
+    setS1({ ...s1, phone: cleaned });
+  }
+
+  function locationString() {
+    if (s1.country === "Nigeria" && s1.state) return `${s1.state}, Nigeria`;
+    if (s1.country && s1.state) return `${s1.state}, ${s1.country}`;
+    return s1.country || "";
+  }
+
   function validateStep1() {
     if (!s1.name.trim()) return "Full name is required";
     if (!s1.email.trim() || !s1.email.includes("@")) return "Valid email is required";
-    if (!s1.phone.trim()) return "Phone number is required";
-    if (!s1.location.trim()) return "Location is required";
+    if (!s1.phone.trim() || s1.phone.replace(/\D/g, "").length < 7) return "Valid phone number is required";
+    if (!s1.country) return "Country is required";
+    if (!s1.state.trim()) return s1.country === "Nigeria" ? "State is required" : "City/Region is required";
     return "";
   }
 
   function validateStep2() {
     if (!s2.amount_intent && s2.amount_intent !== 0) return "Please select an investment amount";
     const amt = resolvedAmount();
-    if (amt < 500000) return "Minimum investment is ₦500,000";
-    if (!s2.motivation.trim() || s2.motivation.trim().length < 20) return "Please share your motivation (at least 20 characters)";
+    if (amt < MIN_INVESTMENT) return "Minimum investment is ₦1,000,000";
     return "";
   }
 
@@ -103,9 +136,9 @@ export default function ApplyPage() {
           name: s1.name,
           email: s1.email,
           phone: s1.phone,
-          location: s1.location,
+          location: locationString(),
           amount_intent: resolvedAmount(),
-          motivation: s2.motivation,
+          motivation: "",
           prior_experience: s2.prior_experience,
           referral_source: s2.referral_source,
           commit_lock: s3.commit_lock,
@@ -147,10 +180,7 @@ export default function ApplyPage() {
               Application Received
             </div>
 
-            <h2
-              className="text-2xl font-bold text-white mb-3"
-              style={{ letterSpacing: "-0.02em" }}
-            >
+            <h2 className="text-2xl font-bold text-white mb-3" style={{ letterSpacing: "-0.02em" }}>
               JazakAllah Khair, {s1.name.split(" ")[0]}
             </h2>
             <p className="text-white/50 mb-8 leading-relaxed text-sm">
@@ -168,10 +198,7 @@ export default function ApplyPage() {
               </div>
             </div>
 
-            <Link
-              href="/"
-              className="text-white/40 hover:text-white/70 text-sm transition-colors"
-            >
+            <Link href="/" className="text-white/40 hover:text-white/70 text-sm transition-colors">
               ← Return to home
             </Link>
           </div>
@@ -188,6 +215,7 @@ export default function ApplyPage() {
 
   const inputClass = "w-full bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#40916c]/40 focus:border-[#40916c] transition-colors";
   const labelClass = "block text-sm font-medium text-gray-600 mb-1.5";
+  const selectClass = inputClass + " cursor-pointer appearance-none";
 
   return (
     <div
@@ -196,12 +224,8 @@ export default function ApplyPage() {
     >
       {/* Nav */}
       <div className="flex items-center justify-between px-5 sm:px-8 py-4 border-b border-white/[0.07]">
-        <Link href="/">
-          <MizarkLogo size="sm" theme="dark" />
-        </Link>
-        <Link href="/" className="text-white/40 hover:text-white/70 text-sm transition-colors">
-          ← Back
-        </Link>
+        <Link href="/"><MizarkLogo size="sm" theme="dark" /></Link>
+        <Link href="/" className="text-white/40 hover:text-white/70 text-sm transition-colors">← Back</Link>
       </div>
 
       <div className="flex-1 flex items-start justify-center px-4 py-10">
@@ -211,10 +235,7 @@ export default function ApplyPage() {
             <div className="inline-block bg-[#d4a843]/10 border border-[#d4a843]/20 rounded-full px-4 py-1 text-[#d4a843] text-xs uppercase tracking-widest mb-4">
               Partner Application
             </div>
-            <h1
-              className="text-3xl font-bold text-white"
-              style={{ letterSpacing: "-0.03em" }}
-            >
+            <h1 className="text-3xl font-bold text-white" style={{ letterSpacing: "-0.03em" }}>
               Apply for Equity Partnership
             </h1>
             <p className="text-white/40 text-sm mt-2">Takes about 3 minutes. No commitment until you sign.</p>
@@ -227,10 +248,8 @@ export default function ApplyPage() {
                 <div className="flex flex-col items-center">
                   <div
                     className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                      step > s.n
-                        ? "bg-[#74c69d] text-[#0f2a1e]"
-                        : step === s.n
-                        ? "bg-[#d4a843] text-[#0f2a1e]"
+                      step > s.n ? "bg-[#74c69d] text-[#0f2a1e]"
+                        : step === s.n ? "bg-[#d4a843] text-[#0f2a1e]"
                         : "bg-white/10 text-white/30"
                     }`}
                     style={step === s.n ? { boxShadow: "0 0 0 4px rgba(212,168,67,0.2)" } : {}}
@@ -239,24 +258,14 @@ export default function ApplyPage() {
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                       </svg>
-                    ) : (
-                      s.n
-                    )}
+                    ) : s.n}
                   </div>
-                  <span
-                    className={`text-[11px] mt-1.5 hidden sm:block transition-colors ${
-                      step === s.n ? "text-white" : "text-white/30"
-                    }`}
-                  >
+                  <span className={`text-[11px] mt-1.5 hidden sm:block transition-colors ${step === s.n ? "text-white" : "text-white/30"}`}>
                     {s.label}
                   </span>
                 </div>
                 {idx < steps.length - 1 && (
-                  <div
-                    className={`w-16 sm:w-24 h-px mx-2 transition-colors ${
-                      step > s.n ? "bg-[#74c69d]/50" : "bg-white/10"
-                    }`}
-                  />
+                  <div className={`w-16 sm:w-24 h-px mx-2 transition-colors ${step > s.n ? "bg-[#74c69d]/50" : "bg-white/10"}`} />
                 )}
               </div>
             ))}
@@ -265,13 +274,11 @@ export default function ApplyPage() {
           {/* Form Card */}
           <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
             <div className="p-8">
-              {/* Step 1 */}
+
+              {/* ── Step 1: Personal Info ── */}
               {step === 1 && (
                 <div>
-                  <h2
-                    className="text-xl font-bold text-gray-900 mb-1"
-                    style={{ letterSpacing: "-0.02em" }}
-                  >
+                  <h2 className="text-xl font-bold text-gray-900 mb-1" style={{ letterSpacing: "-0.02em" }}>
                     Personal Information
                   </h2>
                   <p className="text-gray-400 text-sm mb-6">Tell us a bit about yourself.</p>
@@ -297,42 +304,76 @@ export default function ApplyPage() {
                         className={inputClass}
                       />
                     </div>
+                    <div>
+                      <label className={labelClass}>Phone Number *</label>
+                      <input
+                        type="tel"
+                        inputMode="tel"
+                        value={s1.phone}
+                        onChange={(e) => handlePhone(e.target.value)}
+                        placeholder="+234 801 234 5678"
+                        className={inputClass}
+                        maxLength={20}
+                      />
+                    </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className={labelClass}>Phone Number *</label>
-                        <input
-                          type="tel"
-                          value={s1.phone}
-                          onChange={(e) => setS1({ ...s1, phone: e.target.value })}
-                          placeholder="+234 801 234 5678"
-                          className={inputClass}
-                        />
+                        <label className={labelClass}>Country *</label>
+                        <div className="relative">
+                          <select
+                            value={s1.country}
+                            onChange={(e) => setS1({ ...s1, country: e.target.value, state: "" })}
+                            className={selectClass}
+                          >
+                            {COUNTRIES.map((c) => (
+                              <option key={c.value} value={c.value}>{c.label}</option>
+                            ))}
+                          </select>
+                          <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
                       </div>
                       <div>
-                        <label className={labelClass}>Location *</label>
-                        <input
-                          type="text"
-                          value={s1.location}
-                          onChange={(e) => setS1({ ...s1, location: e.target.value })}
-                          placeholder="Lagos, Nigeria"
-                          className={inputClass}
-                        />
+                        <label className={labelClass}>{s1.country === "Nigeria" ? "State *" : "City / Region *"}</label>
+                        {s1.country === "Nigeria" ? (
+                          <div className="relative">
+                            <select
+                              value={s1.state}
+                              onChange={(e) => setS1({ ...s1, state: e.target.value })}
+                              className={selectClass}
+                            >
+                              <option value="">Select state</option>
+                              {NIGERIAN_STATES.map((st) => (
+                                <option key={st} value={st}>{st}</option>
+                              ))}
+                            </select>
+                            <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        ) : (
+                          <input
+                            type="text"
+                            value={s1.state}
+                            onChange={(e) => setS1({ ...s1, state: e.target.value })}
+                            placeholder="e.g. London"
+                            className={inputClass}
+                          />
+                        )}
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Step 2 */}
+              {/* ── Step 2: Investment Intent ── */}
               {step === 2 && (
                 <div>
-                  <h2
-                    className="text-xl font-bold text-gray-900 mb-1"
-                    style={{ letterSpacing: "-0.02em" }}
-                  >
+                  <h2 className="text-xl font-bold text-gray-900 mb-1" style={{ letterSpacing: "-0.02em" }}>
                     Investment Intent
                   </h2>
-                  <p className="text-gray-400 text-sm mb-6">How much are you planning to invest?</p>
+                  <p className="text-gray-400 text-sm mb-6">How much are you planning to invest? Min ₦1,000,000.</p>
                   <div className="space-y-5">
                     <div>
                       <label className={labelClass}>Investment Amount *</label>
@@ -357,12 +398,14 @@ export default function ApplyPage() {
                             type="number"
                             value={s2.amount_custom}
                             onChange={(e) => setS2({ ...s2, amount_custom: e.target.value })}
-                            placeholder="Enter amount in NGN (min ₦500,000)"
+                            placeholder="Enter amount in NGN (min ₦1,000,000)"
                             className={inputClass + " mt-1"}
+                            min={1_000_000}
+                            max={20_000_000}
                           />
                         </div>
                       )}
-                      {resolvedAmount() >= 500000 && (
+                      {resolvedAmount() >= MIN_INVESTMENT && (
                         <div className="mt-3 flex items-center gap-2 bg-[#f0fdf4] rounded-xl px-4 py-2.5 border border-[#bbf7d0]">
                           <svg className="w-4 h-4 text-[#40916c] flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -372,18 +415,6 @@ export default function ApplyPage() {
                           </span>
                         </div>
                       )}
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>Why do you want to partner with Mizark? *</label>
-                      <textarea
-                        value={s2.motivation}
-                        onChange={(e) => setS2({ ...s2, motivation: e.target.value })}
-                        rows={4}
-                        placeholder="Share your motivation, investment goals, and why this opportunity interests you..."
-                        className={inputClass + " resize-none"}
-                      />
-                      <div className="text-xs text-gray-400 mt-1">{s2.motivation.length} / 20+ characters</div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -407,34 +438,36 @@ export default function ApplyPage() {
                       </div>
                       <div>
                         <label className={labelClass}>How did you hear about this?</label>
-                        <select
-                          value={s2.referral_source}
-                          onChange={(e) => setS2({ ...s2, referral_source: e.target.value })}
-                          className={inputClass + " mt-1 cursor-pointer"}
-                        >
-                          <option value="">Select source</option>
-                          <option value="referral">Friend / Referral</option>
-                          <option value="social_media">Social Media</option>
-                          <option value="whatsapp">WhatsApp</option>
-                          <option value="email">Email</option>
-                          <option value="other">Other</option>
-                        </select>
+                        <div className="relative mt-1">
+                          <select
+                            value={s2.referral_source}
+                            onChange={(e) => setS2({ ...s2, referral_source: e.target.value })}
+                            className={selectClass}
+                          >
+                            <option value="">Select source</option>
+                            <option value="referral">Friend / Referral</option>
+                            <option value="social_media">Social Media</option>
+                            <option value="whatsapp">WhatsApp</option>
+                            <option value="email">Email</option>
+                            <option value="other">Other</option>
+                          </select>
+                          <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Step 3 */}
+              {/* ── Step 3: Commitments ── */}
               {step === 3 && (
                 <div>
-                  <h2
-                    className="text-xl font-bold text-gray-900 mb-1"
-                    style={{ letterSpacing: "-0.02em" }}
-                  >
+                  <h2 className="text-xl font-bold text-gray-900 mb-1" style={{ letterSpacing: "-0.02em" }}>
                     Confirm Your Commitments
                   </h2>
-                  <p className="text-gray-400 text-sm mb-6">Read and confirm each commitment before submitting.</p>
+                  <p className="text-gray-400 text-sm mb-6">Read and tick each commitment before submitting.</p>
                   <div className="space-y-3">
                     {[
                       {
@@ -468,28 +501,41 @@ export default function ApplyPage() {
                         desc: "I confirm that the funds I intend to invest are from a halal (permissible) source. This is a Shariah-compliant Musharakah partnership.",
                       },
                     ].map((item) => (
-                      <button
+                      <label
                         key={item.key}
-                        onClick={() => setS3({ ...s3, [item.key]: !s3[item.key] })}
-                        className={`w-full text-left p-4 rounded-2xl border-2 transition-all ${
+                        className={`flex items-start gap-4 p-4 rounded-2xl border-2 transition-all cursor-pointer ${
                           s3[item.key]
                             ? "border-[#40916c] bg-[#f0fdf4]"
                             : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
                         }`}
                       >
-                        <div className="flex items-start gap-3">
-                          <div
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
-                              s3[item.key]
-                                ? "bg-[#40916c] text-white"
-                                : "bg-gray-100 text-gray-400"
-                            }`}
-                          >
-                            {s3[item.key] ? (
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                              </svg>
-                            ) : item.icon}
+                        {/* Actual checkbox (visually hidden, replaced by custom box) */}
+                        <input
+                          type="checkbox"
+                          checked={s3[item.key]}
+                          onChange={() => setS3({ ...s3, [item.key]: !s3[item.key] })}
+                          className="sr-only"
+                        />
+                        {/* Custom checkbox */}
+                        <div
+                          className={`w-5 h-5 rounded-[6px] border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                            s3[item.key]
+                              ? "bg-[#40916c] border-[#40916c]"
+                              : "bg-white border-gray-300"
+                          }`}
+                        >
+                          {s3[item.key] && (
+                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        {/* Icon + text */}
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <div className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+                            s3[item.key] ? "bg-[#40916c] text-white" : "bg-gray-100 text-gray-400"
+                          }`}>
+                            {item.icon}
                           </div>
                           <div>
                             <div className={`font-semibold text-sm mb-0.5 ${s3[item.key] ? "text-[#166534]" : "text-gray-900"}`}>
@@ -498,7 +544,7 @@ export default function ApplyPage() {
                             <div className="text-xs text-gray-500 leading-relaxed">{item.desc}</div>
                           </div>
                         </div>
-                      </button>
+                      </label>
                     ))}
                   </div>
                 </div>

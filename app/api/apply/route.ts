@@ -23,11 +23,8 @@ export async function POST(req: NextRequest) {
     if (!name?.trim()) return NextResponse.json({ error: "Name is required" }, { status: 400 });
     if (!email?.trim() || !email.includes("@")) return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
     if (!phone?.trim()) return NextResponse.json({ error: "Phone is required" }, { status: 400 });
-    if (!amount_intent || typeof amount_intent !== "number" || amount_intent < 500000) {
-      return NextResponse.json({ error: "Minimum investment is ₦500,000" }, { status: 400 });
-    }
-    if (!motivation?.trim() || motivation.trim().length < 20) {
-      return NextResponse.json({ error: "Please provide a motivation of at least 20 characters" }, { status: 400 });
+    if (!amount_intent || typeof amount_intent !== "number" || amount_intent < 1_000_000) {
+      return NextResponse.json({ error: "Minimum investment is ₦1,000,000" }, { status: 400 });
     }
     if (!commit_lock || !commit_risk || !commit_halal) {
       return NextResponse.json({ error: "All commitment checkboxes must be confirmed" }, { status: 400 });

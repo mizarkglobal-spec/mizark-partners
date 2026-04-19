@@ -9,13 +9,13 @@ export async function GET() {
     return NextResponse.json({
       total_pool_amount: s.total_pool_amount ?? 20_000_000,
       total_equity_pct: s.total_equity_pct ?? 20,
-      min_investment: s.min_investment ?? 500_000,
+      min_investment: s.min_investment ?? 1_000_000,
     });
   } catch {
     return NextResponse.json({
       total_pool_amount: 20_000_000,
       total_equity_pct: 20,
-      min_investment: 500_000,
+      min_investment: 1_000_000,
     });
   }
 }

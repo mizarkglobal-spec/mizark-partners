@@ -51,7 +51,7 @@ export default async function LandingPage() {
   const totalEquityPct: number = raw.total_equity_pct ?? 20;
   const termYears: number = raw.term_years ?? 3;
   const profitDistPct: number = raw.profit_dist_pct ?? 30;
-  const minInvestment: number = raw.min_investment ?? 500_000;
+  const minInvestment: number = raw.min_investment ?? 1_000_000;
 
   // Homepage content
   const hp = { ...HOMEPAGE_DEFAULTS, ...(raw.homepage ?? {}) };
