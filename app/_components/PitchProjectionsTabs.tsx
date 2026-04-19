@@ -97,6 +97,10 @@ export default function PitchProjectionsTabs({ years, y1Months, equity, profitDi
                   <span className="text-white/40">Academy buyers</span>
                   <span className="text-white/60">{yr.total_academy_buyers.toLocaleString()}</span>
                 </div>
+                <div className="flex justify-between text-xs pt-1.5 border-t" style={{ borderColor: "rgba(255,255,255,0.06)" }}>
+                  <span className="text-blue-400/70">Leadash revenue</span>
+                  <span className="text-blue-300 font-medium">{fmtN(yr.total_leadash_revenue)}</span>
+                </div>
               </div>
             </button>
           );

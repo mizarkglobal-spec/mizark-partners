@@ -220,40 +220,6 @@ export default async function PitchPage({ params }: Props) {
           },
           {
             num: "3",
-            title: "Financial Snapshot",
-            content: (
-              <div>
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5">
-                  <p className="text-amber-800 text-sm">
-                    <strong>Note:</strong> {pitch.financials_note}
-                  </p>
-                </div>
-                <div className="overflow-x-auto rounded-xl border border-gray-200">
-                  <table className="w-full text-sm">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="text-left py-3 px-4 text-gray-500 font-medium">Metric</th>
-                        <th className="text-right py-3 px-4 text-gray-500 font-medium">YTD</th>
-                        <th className="text-right py-3 px-4 text-gray-500 font-medium">Last Quarter</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {["Leadash Revenue", "Academy Revenue", "Total Revenue", "Operating Expenses", "Net Profit"].map((row) => (
-                        <tr key={row} className="hover:bg-gray-50 transition-colors">
-                          <td className="py-3 px-4 font-medium text-gray-900">{row}</td>
-                          <td className="py-3 px-4 text-right text-gray-400 text-xs italic">Updated post-activation</td>
-                          <td className="py-3 px-4 text-right text-gray-400 text-xs italic">Updated post-activation</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                <p className="text-xs text-gray-400 mt-3">Financials sourced from Zoho Books and reviewed quarterly.</p>
-              </div>
-            ),
-          },
-          {
-            num: "4",
             title: `Use of Funds — ${fmtCompact(totalPool)} Deployment`,
             content: (
               <div className="grid sm:grid-cols-2 gap-4">
@@ -283,7 +249,7 @@ export default async function PitchPage({ params }: Props) {
             ),
           },
           {
-            num: "5",
+            num: "4",
             title: "Partnership Terms Summary",
             content: (
               <div className="space-y-4">
@@ -292,8 +258,8 @@ export default async function PitchPage({ params }: Props) {
                     ["Structure", "Musharakah (Equity)"],
                     ["Total Pool", fmtCompact(totalPool)],
                     ["Equity Offered", `${totalEquityPct}% of Mizark Global`],
-                    ["Minimum", "₦500,000"],
-                    ["Maximum", "₦5,000,000 per partner"],
+                    ["Minimum", "₦1,000,000"],
+                    ["Maximum", "₦20,000,000 per partner"],
                     ["Term", `${termYears} Years`],
                     ["Distributions", "Quarterly from net profit"],
                     ["Loss Sharing", "Pro-rata to equity stake"],
@@ -323,7 +289,7 @@ export default async function PitchPage({ params }: Props) {
             ),
           },
           {
-            num: "6",
+            num: "5",
             title: "Financial Projections",
             content: (
               <div className="space-y-5">
@@ -345,6 +311,23 @@ export default async function PitchPage({ params }: Props) {
                       </div>
                     ))}
                   </div>
+
+                  {/* Leadash SaaS assumptions */}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <p className="text-[11px] font-semibold uppercase tracking-widest text-blue-500 mb-3">Leadash SaaS</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+                      {[
+                        ["Starting MRR", fmtN(projAssumptions.leadash_starting_mrr)],
+                        ["Monthly MRR Growth", `${projAssumptions.leadash_monthly_growth_pct}%`],
+                        ["Year 1 Leadash Revenue", fmtN(projYears[0]?.total_leadash_revenue ?? 0)],
+                      ].map(([k, v]) => (
+                        <div key={k} className="bg-white rounded-xl p-3 border border-blue-100">
+                          <p className="text-xs text-gray-400 mb-0.5">{k}</p>
+                          <p className="font-bold text-blue-700">{v}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 <PitchProjectionsTabs
@@ -361,7 +344,7 @@ export default async function PitchPage({ params }: Props) {
             ),
           },
           {
-            num: "7",
+            num: "6",
             title: "Risk Factors",
             accent: true,
             content: (
