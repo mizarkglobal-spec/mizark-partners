@@ -16,14 +16,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   let { data: partner } = await db
     .from("partners")
-    .select("id, name, equity_pct, status, investment_amount, start_date, onboarding_completed")
+    .select("*")
     .eq("user_id", user.id)
     .maybeSingle();
 
   if (!partner) {
     const { data: byEmail } = await db
       .from("partners")
-      .select("id, name, equity_pct, status, investment_amount, start_date, onboarding_completed")
+      .select("*")
       .eq("email", user.email!)
       .maybeSingle();
 
