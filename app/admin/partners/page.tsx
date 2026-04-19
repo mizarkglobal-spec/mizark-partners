@@ -17,7 +17,6 @@ interface Partner {
   notes: string | null;
   agreement_token: string | null;
   payment_token: string | null;
-  partner_agreements: { id: string; signed_at: string | null; countersigned_at: string | null }[];
   onboarding_completed: boolean;
   kyc_data: Record<string, string> | null;
 }
@@ -42,9 +41,7 @@ export default function AdminPartnersPage() {
   const [distributions, setDistributions] = useState<Record<string, number>>({});
 
   // Action states
-  const [countersigning, setCountersigning] = useState<string | null>(null);
-  const [countersignedIds, setCountersignedIds] = useState<Set<string>>(new Set());
-  const [activating, setActivating] = useState<string | null>(null);
+const [activating, setActivating] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [resending, setResending] = useState<string | null>(null);
 
@@ -86,17 +83,7 @@ export default function AdminPartnersPage() {
     finally { setActivating(null); }
   }
 
-  async function handleCountersign(partnerId: string) {
-    setCountersigning(partnerId);
-    try {
-      const res = await fetch(`/api/admin/partners/${partnerId}/countersign`, { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setCountersignedIds((prev) => new Set([...prev, partnerId]));
-      setPartners((prev) => prev.map((p) => p.id === partnerId ? { ...p, status: "awaiting_payment" } : p));
-    } catch (e: any) { alert(e.message); }
-    finally { setCountersigning(null); }
-  }
+
 
   async function handleDelete(partnerId: string, name: string) {
     if (!confirm(`Delete ${name}? This permanently removes the partner and all related records. This cannot be undone.`)) return;
@@ -455,49 +442,6 @@ export default function AdminPartnersPage() {
                                 </button>
                               )}
                             </div>
-
-                            {/* Countersign action */}
-                            {(() => {
-                              const agreement = p.partner_agreements?.[0];
-                              const hasSigned = !!agreement?.signed_at;
-                              const hasCountersigned = !!agreement?.countersigned_at || countersignedIds.has(p.id);
-                              return hasSigned && !hasCountersigned;
-                            })() && (
-                              <div className="flex items-center gap-4 bg-blue-900/20 border border-blue-700/30 rounded-xl p-4">
-                                <div className="flex-1">
-                                  <div className="text-blue-300 font-semibold text-sm">Agreement Signed — Awaiting Countersignature</div>
-                                  <div className="text-white/40 text-xs mt-0.5">
-                                    Review the agreement, then countersign to send payment instructions to {p.name}.
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2 flex-shrink-0">
-                                  {p.agreement_token && (
-                                    <a href={`/api/agreement/${p.agreement_token}/print`} target="_blank" rel="noopener noreferrer"
-                                      className="px-3 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 text-xs transition-colors">
-                                      Download PDF →
-                                    </a>
-                                  )}
-                                  <button
-                                    onClick={() => handleCountersign(p.id)}
-                                    disabled={countersigning === p.id}
-                                    className="px-4 py-2 rounded-lg bg-[#d4a843] hover:bg-[#c49a38] disabled:opacity-50 text-[#0f2a1e] font-bold text-xs transition-colors flex items-center gap-1.5"
-                                  >
-                                    {countersigning === p.id ? (
-                                      <><svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Processing...</>
-                                    ) : "Countersign & Send Payment Link"}
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-
-                            {(countersignedIds.has(p.id) || !!p.partner_agreements?.[0]?.countersigned_at) && p.status !== "active" && (
-                              <div className="flex items-center gap-3 bg-orange-900/20 border border-orange-700/30 rounded-xl p-4">
-                                <svg className="w-4 h-4 text-orange-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <div className="text-orange-300 text-sm">Payment instructions sent — waiting for partner to complete payment.</div>
-                              </div>
-                            )}
 
                             {/* Manual payment activation */}
                             {["awaiting_payment", "pending_payment", "agreement_signed"].includes(p.status) && (

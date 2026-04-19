@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
   const { data: partners } = await db
     .from("partners")
-    .select("*, partner_agreements(id, signed_at, countersigned_at)")
+    .select("*")
     .order("created_at", { ascending: false });
 
   // Get total distributed per partner
