@@ -31,13 +31,31 @@ const NIGERIAN_STATES = [
 
 const COUNTRIES = [
   { value: "Nigeria", label: "🇳🇬 Nigeria" },
-  { value: "United Kingdom", label: "🇬🇧 United Kingdom" },
-  { value: "United States", label: "🇺🇸 United States" },
-  { value: "Canada", label: "🇨🇦 Canada" },
+  // Gulf
+  { value: "UAE", label: "🇦🇪 UAE" },
+  { value: "Saudi Arabia", label: "🇸🇦 Saudi Arabia" },
+  { value: "Qatar", label: "🇶🇦 Qatar" },
+  { value: "Kuwait", label: "🇰🇼 Kuwait" },
+  { value: "Bahrain", label: "🇧🇭 Bahrain" },
+  { value: "Oman", label: "🇴🇲 Oman" },
+  // Arab world
+  { value: "Egypt", label: "🇪🇬 Egypt" },
+  { value: "Jordan", label: "🇯🇴 Jordan" },
+  { value: "Lebanon", label: "🇱🇧 Lebanon" },
+  { value: "Morocco", label: "🇲🇦 Morocco" },
+  { value: "Tunisia", label: "🇹🇳 Tunisia" },
+  { value: "Algeria", label: "🇩🇿 Algeria" },
+  { value: "Libya", label: "🇱🇾 Libya" },
+  { value: "Sudan", label: "🇸🇩 Sudan" },
+  { value: "Iraq", label: "🇮🇶 Iraq" },
+  // West Africa
   { value: "Ghana", label: "🇬🇭 Ghana" },
   { value: "Kenya", label: "🇰🇪 Kenya" },
   { value: "South Africa", label: "🇿🇦 South Africa" },
-  { value: "UAE", label: "🇦🇪 UAE" },
+  // Western diaspora
+  { value: "United Kingdom", label: "🇬🇧 United Kingdom" },
+  { value: "United States", label: "🇺🇸 United States" },
+  { value: "Canada", label: "🇨🇦 Canada" },
   { value: "Other", label: "🌍 Other" },
 ];
 
