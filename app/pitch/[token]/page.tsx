@@ -298,10 +298,9 @@ export default async function PitchPage({ params }: Props) {
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-[#40916c] mb-4">Funnel Assumptions</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                     {[
-                      ["Cost Per Lead", `₦${projAssumptions.cpl.toLocaleString("en-NG")}`],
+                      ["Cost Per Challenge (CPC)", `₦${projAssumptions.cpc.toLocaleString("en-NG")}`],
                       ["Challenge Price", `₦${projAssumptions.challenge_price.toLocaleString("en-NG")}`],
                       ["Academy Price", `₦${projAssumptions.academy_price.toLocaleString("en-NG")}`],
-                      ["Challenge Conv.", `${projAssumptions.challenge_conversion_pct}%`],
                       ["Academy Conv.", `${projAssumptions.academy_conversion_pct}%`],
                       ["Month 1 Ad Spend", fmtN(projAssumptions.ad_spend_monthly[0] ?? 0)],
                     ].map(([k, v]) => (

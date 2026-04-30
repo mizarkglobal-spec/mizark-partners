@@ -1,8 +1,7 @@
 export interface ProjectionAssumptions {
-  // Funnel inputs
+  // Funnel inputs — cost per challenge buyer (direct acquisition cost)
   ad_spend_monthly: number[];           // length 36, naira (May 2026 – Apr 2029)
-  cpl: number;                          // cost per lead
-  challenge_conversion_pct: number;     // % leads → challenge buyers
+  cpc: number;                          // cost per challenge buyer
   academy_conversion_pct: number;       // % challenge buyers → academy
 
   // Prices
@@ -34,8 +33,7 @@ export const PROJECTION_DEFAULTS: ProjectionAssumptions = {
     65_000_000, 65_000_000, 70_000_000, 70_000_000, 75_000_000, 75_000_000,
     80_000_000, 80_000_000, 85_000_000, 85_000_000, 90_000_000, 90_000_000,
   ],
-  cpl: 800,
-  challenge_conversion_pct: 4,
+  cpc: 7_500,
   academy_conversion_pct: 8,
   challenge_price: 10_000,
   academy_price: 120_000,
@@ -50,7 +48,6 @@ export const PROJECTION_DEFAULTS: ProjectionAssumptions = {
 export interface MonthProjection {
   month: number;
   ad_spend: number;
-  leads: number;
   challenge_buyers: number;
   academy_buyers: number;
   challenge_revenue: number;
@@ -63,7 +60,6 @@ export interface MonthProjection {
 
 export interface YearSummary {
   year: number;
-  total_leads: number;
   total_challenge_buyers: number;
   total_academy_buyers: number;
   total_challenge_revenue: number;
@@ -81,8 +77,8 @@ export function computeMonthlyProjections(a: ProjectionAssumptions): MonthProjec
   const months = ramp.slice(0, 36);
 
   return months.map((adSpend, i) => {
-    const leads = Math.floor(adSpend / Math.max(a.cpl, 1));
-    const challengeBuyers = Math.floor(leads * a.challenge_conversion_pct / 100);
+    // Challenge buyers computed directly from ad spend ÷ cost per challenge
+    const challengeBuyers = Math.floor(adSpend / Math.max(a.cpc, 1));
     const academyBuyers = Math.floor(challengeBuyers * a.academy_conversion_pct / 100);
     const challengeRev = challengeBuyers * a.challenge_price;
     const academyRev = academyBuyers * a.academy_price;
@@ -94,7 +90,6 @@ export function computeMonthlyProjections(a: ProjectionAssumptions): MonthProjec
     return {
       month: i + 1,
       ad_spend: adSpend,
-      leads,
       challenge_buyers: challengeBuyers,
       academy_buyers: academyBuyers,
       challenge_revenue: challengeRev,
@@ -109,7 +104,6 @@ export function computeMonthlyProjections(a: ProjectionAssumptions): MonthProjec
 
 function sumMonths(months: MonthProjection[]): Omit<YearSummary, "year"> {
   return {
-    total_leads: months.reduce((s, m) => s + m.leads, 0),
     total_challenge_buyers: months.reduce((s, m) => s + m.challenge_buyers, 0),
     total_academy_buyers: months.reduce((s, m) => s + m.academy_buyers, 0),
     total_challenge_revenue: months.reduce((s, m) => s + m.challenge_revenue, 0),

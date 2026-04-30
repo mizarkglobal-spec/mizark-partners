@@ -85,10 +85,9 @@ export default function ProjectionsAdminPage() {
   const funnelPreview = useMemo(() => {
     if (!proj) return null;
     const exSpend = proj.ad_spend_monthly[0] ?? 0;
-    const leads = Math.floor(exSpend / Math.max(proj.cpl, 1));
-    const challenge = Math.floor(leads * proj.challenge_conversion_pct / 100);
+    const challenge = Math.floor(exSpend / Math.max(proj.cpc, 1));
     const academy = Math.floor(challenge * proj.academy_conversion_pct / 100);
-    return { exSpend, leads, challenge, academy };
+    return { exSpend, challenge, academy };
   }, [proj]);
 
   if (loading)
@@ -153,17 +152,12 @@ export default function ProjectionsAdminPage() {
               <span className="w-2 h-2 rounded-full bg-[#74c69d]" />
               Marketing Funnel
             </h2>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
-                <label className={labelCls}>Cost Per Lead (CPL) ₦</label>
-                <input type="number" className={inputCls} value={proj.cpl}
-                  onChange={(e) => set("cpl", Number(e.target.value))} />
-              </div>
-              <div>
-                <label className={labelCls}>Challenge Conversion %</label>
-                <input type="number" step="0.1" className={inputCls} value={proj.challenge_conversion_pct}
-                  onChange={(e) => set("challenge_conversion_pct", Number(e.target.value))} />
-                <p className="text-white/25 text-xs mt-1">Leads → Challenge buyers</p>
+                <label className={labelCls}>Cost Per Challenge (CPC) ₦</label>
+                <input type="number" className={inputCls} value={proj.cpc}
+                  onChange={(e) => set("cpc", Number(e.target.value))} />
+                <p className="text-white/25 text-xs mt-1">Ad spend ÷ CPC = challenge buyers</p>
               </div>
               <div>
                 <label className={labelCls}>Academy Conversion %</label>
@@ -196,8 +190,6 @@ export default function ProjectionsAdminPage() {
                 <div className="flex flex-wrap items-center gap-2 text-xs">
                   {[
                     { label: `₦${numFmt(funnelPreview.exSpend)} ad spend`, color: "bg-white/10 text-white/70" },
-                    { label: "→", color: "text-white/30 bg-transparent px-0" },
-                    { label: `${numFmt(funnelPreview.leads)} leads`, color: "bg-blue-900/40 text-blue-300 border border-blue-800/40" },
                     { label: "→", color: "text-white/30 bg-transparent px-0" },
                     { label: `${numFmt(funnelPreview.challenge)} challenge buyers`, color: "bg-[#74c69d]/10 text-[#74c69d] border border-[#74c69d]/20" },
                     { label: "→", color: "text-white/30 bg-transparent px-0" },
@@ -365,10 +357,11 @@ export default function ProjectionsAdminPage() {
                       <span className="font-bold" style={{ color: cfg.accent }}>{fmtN(y.net_profit)}</span>
                     </div>
                     <div className="text-xs text-white/30 pt-1 space-y-0.5">
-                      <div className="flex justify-between"><span>Challenge</span><span>{fmtN(y.total_challenge_revenue)}</span></div>
-                      <div className="flex justify-between"><span>Academy</span><span>{fmtN(y.total_academy_revenue)}</span></div>
-                      <div className="flex justify-between"><span>Leadash</span><span>{fmtN(y.total_leadash_revenue)}</span></div>
+                      <div className="flex justify-between"><span>Challenge buyers</span><span>{numFmt(y.total_challenge_buyers)}</span></div>
                       <div className="flex justify-between"><span>Academy buyers</span><span>{numFmt(y.total_academy_buyers)}</span></div>
+                      <div className="flex justify-between"><span>Challenge rev</span><span>{fmtN(y.total_challenge_revenue)}</span></div>
+                      <div className="flex justify-between"><span>Academy rev</span><span>{fmtN(y.total_academy_revenue)}</span></div>
+                      <div className="flex justify-between"><span>Leadash</span><span>{fmtN(y.total_leadash_revenue)}</span></div>
                     </div>
                   </div>
                 </button>
@@ -389,7 +382,7 @@ export default function ProjectionsAdminPage() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-white/10">
-                      {["Month","Ad Spend","Leads","Challenge","Academy","Challenge Rev","Academy Rev","Leadash","Total Rev","Expenses","Net Profit"].map((h) => (
+                      {["Month","Ad Spend","Challenge","Academy","Challenge Rev","Academy Rev","Leadash","Total Rev","Expenses","Net Profit"].map((h) => (
                         <th key={h} className="text-left px-3 py-3 text-white/40 font-medium whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -399,7 +392,6 @@ export default function ProjectionsAdminPage() {
                       <tr key={m.month} className="border-b border-white/5 hover:bg-white/[0.02]">
                         <td className="px-3 py-2.5 text-white/60 font-medium">{monthLabel(selectedYear * 12 + idx)}</td>
                         <td className="px-3 py-2.5 text-white/50">{fmtN(m.ad_spend)}</td>
-                        <td className="px-3 py-2.5 text-blue-300">{numFmt(m.leads)}</td>
                         <td className="px-3 py-2.5 text-[#74c69d]">{numFmt(m.challenge_buyers)}</td>
                         <td className="px-3 py-2.5 text-[#d4a843]">{numFmt(m.academy_buyers)}</td>
                         <td className="px-3 py-2.5 text-[#74c69d]">{fmtN(m.challenge_revenue)}</td>
@@ -413,7 +405,6 @@ export default function ProjectionsAdminPage() {
                     <tr className="bg-white/[0.04] border-t border-white/20">
                       <td className="px-3 py-3 text-white font-bold">Total</td>
                       <td className="px-3 py-3 text-white/60 font-medium">{fmtN(years[selectedYear].total_expenses)}</td>
-                      <td className="px-3 py-3 text-blue-300 font-medium">{numFmt(years[selectedYear].total_leads)}</td>
                       <td className="px-3 py-3 text-[#74c69d] font-medium">{numFmt(years[selectedYear].total_challenge_buyers)}</td>
                       <td className="px-3 py-3 text-[#d4a843] font-medium">{numFmt(years[selectedYear].total_academy_buyers)}</td>
                       <td className="px-3 py-3 text-[#74c69d] font-bold">{fmtN(years[selectedYear].total_challenge_revenue)}</td>

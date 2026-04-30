@@ -23,7 +23,6 @@ export default function PitchProjectionsTabs({ years, allMonths, equity, profitD
 
   const totals = activeMonths.reduce(
     (acc, m) => ({
-      leads: acc.leads + m.leads,
       challenge_buyers: acc.challenge_buyers + m.challenge_buyers,
       academy_buyers: acc.academy_buyers + m.academy_buyers,
       total_revenue: acc.total_revenue + m.total_revenue,
@@ -31,7 +30,7 @@ export default function PitchProjectionsTabs({ years, allMonths, equity, profitD
       net_profit: acc.net_profit + m.net_profit,
       partner_share: acc.partner_share + Math.floor(Math.max(0, m.net_profit) * profitDistPct / 100 * equity / 100),
     }),
-    { leads: 0, challenge_buyers: 0, academy_buyers: 0, total_revenue: 0, total_expenses: 0, net_profit: 0, partner_share: 0 }
+    { challenge_buyers: 0, academy_buyers: 0, total_revenue: 0, total_expenses: 0, net_profit: 0, partner_share: 0 }
   );
 
   return (
@@ -93,7 +92,7 @@ export default function PitchProjectionsTabs({ years, allMonths, equity, profitD
           <table className="w-full text-xs">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                {["Month","Ad Spend","Leads","Challenge","Academy","Revenue","Expenses","Net Profit","Your Share"].map((h) => (
+                {["Month","Ad Spend","Challenge","Academy","Revenue","Expenses","Net Profit","Your Share"].map((h) => (
                   <th key={h} className="text-left py-2.5 px-3 text-gray-500 font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -105,7 +104,6 @@ export default function PitchProjectionsTabs({ years, allMonths, equity, profitD
                   <tr key={m.month} className="hover:bg-gray-50">
                     <td className="py-2.5 px-3 font-medium text-gray-700">{monthLabel(monthOffset + idx)}</td>
                     <td className="py-2.5 px-3 text-gray-500">{fmtN(m.ad_spend)}</td>
-                    <td className="py-2.5 px-3 text-blue-600">{m.leads.toLocaleString()}</td>
                     <td className="py-2.5 px-3 text-[#40916c]">{m.challenge_buyers.toLocaleString()}</td>
                     <td className="py-2.5 px-3 text-amber-600">{m.academy_buyers.toLocaleString()}</td>
                     <td className="py-2.5 px-3 font-medium text-gray-900">{fmtN(m.total_revenue)}</td>
@@ -122,7 +120,6 @@ export default function PitchProjectionsTabs({ years, allMonths, equity, profitD
               <tr>
                 <td className="py-2.5 px-3 font-bold text-gray-700">Total</td>
                 <td className="py-2.5 px-3" />
-                <td className="py-2.5 px-3 font-semibold text-blue-600">{totals.leads.toLocaleString()}</td>
                 <td className="py-2.5 px-3 font-semibold text-[#40916c]">{totals.challenge_buyers.toLocaleString()}</td>
                 <td className="py-2.5 px-3 font-semibold text-amber-600">{totals.academy_buyers.toLocaleString()}</td>
                 <td className="py-2.5 px-3 font-bold text-gray-900">{fmtN(totals.total_revenue)}</td>
