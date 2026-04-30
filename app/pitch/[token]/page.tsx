@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { fmt } from "@/lib/format";
 import { PITCH_DEFAULTS, type PitchContent } from "@/app/api/admin/pitch-content/route";
-import { PROJECTION_DEFAULTS, computeMonthlyProjections, computeYearSummaries, fmtN } from "@/lib/projections";
+import { computeProgressiveMonths, computeProgressiveYearSummaries, fmtN } from "@/lib/projections";
 import PitchProjectionsTabs from "@/app/_components/PitchProjectionsTabs";
 import MizarkLogo from "@/components/MizarkLogo";
 
@@ -51,10 +51,9 @@ export default async function PitchPage({ params }: Props) {
   // Pitch content — merge DB overrides with defaults
   const pitch: PitchContent = { ...PITCH_DEFAULTS, ...(rawSettings.pitch_content as Partial<PitchContent> ?? {}) };
 
-  // Projections
-  const projAssumptions = { ...PROJECTION_DEFAULTS, ...(rawSettings.projections ?? {}) };
-  const projMonths = computeMonthlyProjections(projAssumptions);
-  const projYears = computeYearSummaries(projAssumptions);
+  // Projections — continuous 30% monthly growth, May 2026 → Apr 2029
+  const projMonths = computeProgressiveMonths();
+  const projYears = computeProgressiveYearSummaries(projMonths);
   const profitDistPct: number = rawSettings.profit_dist_pct ?? 30;
 
   const equity = (application.amount_intent / totalPool) * totalEquityPct;
@@ -293,17 +292,17 @@ export default async function PitchPage({ params }: Props) {
             title: "Financial Projections",
             content: (
               <div className="space-y-5">
-                {/* Funnel assumptions */}
+                {/* Growth model assumptions */}
                 <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
-                  <p className="text-[11px] font-semibold uppercase tracking-widest text-[#40916c] mb-4">Funnel Assumptions</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-[#40916c] mb-4">Growth Model</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                     {[
-                      ["Cost Per Lead", `₦${projAssumptions.cpl.toLocaleString("en-NG")}`],
-                      ["Challenge Price", `₦${projAssumptions.challenge_price.toLocaleString("en-NG")}`],
-                      ["Academy Price", `₦${projAssumptions.academy_price.toLocaleString("en-NG")}`],
-                      ["Challenge Conv.", `${projAssumptions.challenge_conversion_pct}%`],
-                      ["Academy Conv.", `${projAssumptions.academy_conversion_pct}%`],
-                      ["Month 1 Ad Spend", fmtN(projAssumptions.ad_spend_monthly[0] ?? 0)],
+                      ["Starting Revenue (May '26)", "₦5,000,000"],
+                      ["Monthly Growth Rate", "30% (compounding)"],
+                      ["Projection Period", "May 2026 – Apr 2029"],
+                      ["Year 1 Revenue", fmtN(projYears[0]?.total_revenue ?? 0)],
+                      ["Year 2 Revenue", fmtN(projYears[1]?.total_revenue ?? 0)],
+                      ["Year 3 Revenue", fmtN(projYears[2]?.total_revenue ?? 0)],
                     ].map(([k, v]) => (
                       <div key={k} className="bg-white rounded-xl p-3 border border-gray-100">
                         <p className="text-xs text-gray-400 mb-0.5">{k}</p>
@@ -311,34 +310,17 @@ export default async function PitchPage({ params }: Props) {
                       </div>
                     ))}
                   </div>
-
-                  {/* Leadash SaaS assumptions */}
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <p className="text-[11px] font-semibold uppercase tracking-widest text-blue-500 mb-3">Leadash SaaS</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
-                      {[
-                        ["Starting MRR", fmtN(projAssumptions.leadash_starting_mrr)],
-                        ["Monthly MRR Growth", `${projAssumptions.leadash_monthly_growth_pct}%`],
-                        ["Year 1 Leadash Revenue", fmtN(projYears[0]?.total_leadash_revenue ?? 0)],
-                      ].map(([k, v]) => (
-                        <div key={k} className="bg-white rounded-xl p-3 border border-blue-100">
-                          <p className="text-xs text-gray-400 mb-0.5">{k}</p>
-                          <p className="font-bold text-blue-700">{v}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                 </div>
 
                 <PitchProjectionsTabs
                   years={projYears}
-                  y1Months={projMonths}
+                  allMonths={projMonths}
                   equity={equity}
                   profitDistPct={profitDistPct}
                 />
 
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                  <p className="text-amber-800 text-xs leading-relaxed">{projAssumptions.disclaimer}</p>
+                  <p className="text-amber-800 text-xs leading-relaxed">Projections are forward-looking estimates based on a 30% monthly compound growth model starting May 2026. Actual results may vary. Past performance does not guarantee future results.</p>
                 </div>
               </div>
             ),

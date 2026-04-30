@@ -162,3 +162,48 @@ export function fmtN(n: number): string {
   if (n >= 1_000) return `₦${Math.round(n / 1_000)}K`;
   return `₦${n.toLocaleString("en-NG")}`;
 }
+
+// Progressive model: continuous 30% monthly compound growth, May 2026 → Apr 2029 (36 months)
+const PROG_START_REVENUE = 5_000_000;
+const PROG_MONTHLY_GROWTH = 0.30;
+const PROG_EXPENSE_RATIO = 0.40;   // 40% of revenue
+const PROG_LEADASH_SHARE = 0.25;   // 25% of revenue
+const PROG_ACADEMY_SHARE = 0.65;   // 65% of revenue
+const PROG_CHALLENGE_SHARE = 0.10; // 10% of revenue (remainder after leadash + academy)
+
+export function computeProgressiveMonths(): MonthProjection[] {
+  return Array.from({ length: 36 }, (_, i) => {
+    const totalRev = Math.round(PROG_START_REVENUE * Math.pow(1 + PROG_MONTHLY_GROWTH, i));
+    const totalExp = Math.round(totalRev * PROG_EXPENSE_RATIO);
+    const leadashMrr = Math.round(totalRev * PROG_LEADASH_SHARE);
+    const academyRev = Math.round(totalRev * PROG_ACADEMY_SHARE);
+    const challengeRev = totalRev - leadashMrr - academyRev;
+    const academyBuyers = Math.max(1, Math.round(academyRev / 120_000));
+    const challengeBuyers = Math.round(academyBuyers / 0.08);
+    const leads = Math.round(challengeBuyers / 0.04);
+    return {
+      month: i + 1,
+      ad_spend: Math.round(totalExp * 0.75),
+      leads,
+      challenge_buyers: challengeBuyers,
+      academy_buyers: academyBuyers,
+      challenge_revenue: challengeRev,
+      academy_revenue: academyRev,
+      leadash_mrr: leadashMrr,
+      total_revenue: totalRev,
+      total_expenses: totalExp,
+      net_profit: totalRev - totalExp,
+    };
+  });
+}
+
+export function computeProgressiveYearSummaries(months: MonthProjection[]): YearSummary[] {
+  return [0, 1, 2].map((y) => ({ year: y + 1, ...sumMonths(months.slice(y * 12, (y + 1) * 12)) }));
+}
+
+// Calendar label for progressive month i (0-indexed): i=0 → "May '26"
+const _MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+export function progressiveMonthLabel(i: number): string {
+  const abs = 4 + i; // May = index 4
+  return `${_MONTH_NAMES[abs % 12]} '${String(2026 + Math.floor(abs / 12)).slice(2)}`;
+}
