@@ -3,7 +3,7 @@ import { createAdminClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { fmt } from "@/lib/format";
 import { PITCH_DEFAULTS, type PitchContent } from "@/app/api/admin/pitch-content/route";
-import { computeProgressiveMonths, computeProgressiveYearSummaries, fmtN } from "@/lib/projections";
+import { PROJECTION_DEFAULTS, computeProgressiveMonths, computeProgressiveYearSummaries, fmtN } from "@/lib/projections";
 import PitchProjectionsTabs from "@/app/_components/PitchProjectionsTabs";
 import MizarkLogo from "@/components/MizarkLogo";
 
@@ -51,8 +51,9 @@ export default async function PitchPage({ params }: Props) {
   // Pitch content — merge DB overrides with defaults
   const pitch: PitchContent = { ...PITCH_DEFAULTS, ...(rawSettings.pitch_content as Partial<PitchContent> ?? {}) };
 
-  // Projections — continuous 30% monthly growth, May 2026 → Apr 2029
-  const projMonths = computeProgressiveMonths();
+  // Projections — progressive model, params from admin settings
+  const projAssumptions = { ...PROJECTION_DEFAULTS, ...(rawSettings.projections ?? {}) };
+  const projMonths = computeProgressiveMonths(projAssumptions);
   const projYears = computeProgressiveYearSummaries(projMonths);
   const profitDistPct: number = rawSettings.profit_dist_pct ?? 30;
 
@@ -297,8 +298,8 @@ export default async function PitchPage({ params }: Props) {
                   <p className="text-[11px] font-semibold uppercase tracking-widest text-[#40916c] mb-4">Growth Model</p>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                     {[
-                      ["Starting Revenue (May '26)", "₦5,000,000"],
-                      ["Monthly Growth Rate", "30% (compounding)"],
+                      ["Starting Revenue (May '26)", fmtN(projAssumptions.prog_starting_revenue)],
+                      ["Monthly Growth Rate", `${projAssumptions.prog_monthly_growth_pct}% (compounding)`],
                       ["Projection Period", "May 2026 – Apr 2029"],
                       ["Year 1 Revenue", fmtN(projYears[0]?.total_revenue ?? 0)],
                       ["Year 2 Revenue", fmtN(projYears[1]?.total_revenue ?? 0)],
@@ -320,7 +321,7 @@ export default async function PitchPage({ params }: Props) {
                 />
 
                 <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-                  <p className="text-amber-800 text-xs leading-relaxed">Projections are forward-looking estimates based on a 30% monthly compound growth model starting May 2026. Actual results may vary. Past performance does not guarantee future results.</p>
+                  <p className="text-amber-800 text-xs leading-relaxed">{projAssumptions.disclaimer}</p>
                 </div>
               </div>
             ),

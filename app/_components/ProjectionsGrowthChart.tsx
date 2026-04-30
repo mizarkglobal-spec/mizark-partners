@@ -13,7 +13,8 @@ import { fmtN } from "@/lib/projections";
 
 interface MonthData {
   month: number;
-  academy_funnel: number; // challenge_revenue + academy_revenue
+  label?: string; // calendar label e.g. "May '26" — falls back to generic month index
+  academy_funnel: number;
   leadash: number;
   net_profit: number;
 }
@@ -40,7 +41,7 @@ function CustomTooltip({ active, payload, label }: any) {
 
 export default function ProjectionsGrowthChart({ months }: { months: MonthData[] }) {
   const data = months.map((m) => ({
-    name: MONTHS[m.month - 1],
+    name: m.label ?? MONTHS[m.month - 1],
     academy_funnel: m.academy_funnel,
     leadash: m.leadash,
     net_profit: m.net_profit,

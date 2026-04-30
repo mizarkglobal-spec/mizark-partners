@@ -5,6 +5,7 @@ import ProjectionsGrowthChart from "./ProjectionsGrowthChart";
 
 interface ChartMonth {
   month: number;
+  label?: string;
   academy_funnel: number;
   leadash: number;
   net_profit: number;
@@ -12,26 +13,8 @@ interface ChartMonth {
 
 interface Props {
   years: YearSummary[];
-  y1Months: ChartMonth[];
+  allMonths: ChartMonth[]; // 36 months continuous
   disclaimer: string;
-}
-
-function scaleMonths(y1Months: ChartMonth[], y1: YearSummary, yN: YearSummary): ChartMonth[] {
-  const revRatio = y1.total_revenue > 0 ? yN.total_revenue / y1.total_revenue : 1;
-  const profitRatio = y1.net_profit !== 0 ? yN.net_profit / y1.net_profit : 1;
-  const academyRatio =
-    (y1.total_challenge_revenue + y1.total_academy_revenue) > 0
-      ? (yN.total_challenge_revenue + yN.total_academy_revenue) /
-        (y1.total_challenge_revenue + y1.total_academy_revenue)
-      : revRatio;
-  const leadashRatio =
-    y1.total_leadash_revenue > 0 ? yN.total_leadash_revenue / y1.total_leadash_revenue : revRatio;
-  return y1Months.map((m) => ({
-    month: m.month,
-    academy_funnel: Math.round(m.academy_funnel * academyRatio),
-    leadash: Math.round(m.leadash * leadashRatio),
-    net_profit: Math.round(m.net_profit * profitRatio),
-  }));
 }
 
 const YEAR_CONFIGS = [
@@ -40,14 +23,12 @@ const YEAR_CONFIGS = [
   { accent: "#a78bfa", bg: "linear-gradient(135deg,#0f0a1e,#1a1030)", border: "rgba(167,139,250,0.2)", activeBorder: "rgba(167,139,250,0.6)" },
 ];
 
-export default function ProjectionsTabs({ years, y1Months, disclaimer }: Props) {
+const YEAR_DATE_RANGES = ["May '26 – Apr '27", "May '27 – Apr '28", "May '28 – Apr '29"];
+
+export default function ProjectionsTabs({ years, allMonths, disclaimer }: Props) {
   const [selected, setSelected] = useState(0);
 
-  const activeMonths =
-    selected === 0
-      ? y1Months
-      : scaleMonths(y1Months, years[0], years[selected]);
-
+  const activeMonths = allMonths.slice(selected * 12, (selected + 1) * 12);
   const y = years[selected];
   const c = YEAR_CONFIGS[selected];
 
@@ -70,7 +51,7 @@ export default function ProjectionsTabs({ years, y1Months, disclaimer }: Props) 
                 outline: "none",
               }}
             >
-              <div className="text-white/40 text-[11px] uppercase tracking-[0.12em] mb-4 font-medium flex items-center justify-between">
+              <div className="text-white/40 text-[11px] uppercase tracking-[0.12em] mb-1 font-medium flex items-center justify-between">
                 <span>Year {yr.year} Projection</span>
                 {isActive && (
                   <span
@@ -81,6 +62,7 @@ export default function ProjectionsTabs({ years, y1Months, disclaimer }: Props) 
                   </span>
                 )}
               </div>
+              <p className="text-white/25 text-[10px] mb-4">{YEAR_DATE_RANGES[i]}</p>
               <div className="space-y-3">
                 <div>
                   <p className="text-white/40 text-[11px] mb-0.5">Total Revenue</p>
@@ -113,7 +95,7 @@ export default function ProjectionsTabs({ years, y1Months, disclaimer }: Props) 
       >
         <div className="px-6 pt-5 pb-2 flex items-center justify-between flex-wrap gap-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.15em]" style={{ color: c.accent }}>
-            Year {y.year} — Monthly Revenue &amp; Profit
+            Year {y?.year} — {YEAR_DATE_RANGES[selected]}
           </p>
           <div className="flex items-center gap-4 text-[11px] text-white/40">
             <span className="flex items-center gap-1.5">
