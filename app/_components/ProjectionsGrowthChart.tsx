@@ -13,7 +13,7 @@ import { fmtN } from "@/lib/projections";
 
 interface MonthData {
   month: number;
-  label?: string; // calendar label e.g. "May '26" — falls back to generic month index
+  label?: string;
   academy_funnel: number;
   leadash: number;
   net_profit: number;

@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { fmt } from "@/lib/format";
-import { PROJECTION_DEFAULTS, computeProgressiveMonths, computeProgressiveYearSummaries, fmtN, type YearSummary } from "@/lib/projections";
+import { PROJECTION_DEFAULTS, computeMonthlyProjections, computeYearSummaries, fmtN, type YearSummary } from "@/lib/projections";
 
 type Status = "all" | "pending" | "approved" | "rejected";
 
@@ -45,9 +45,9 @@ export default function AdminApplicationsPage() {
       .then((r) => r.json())
       .then((d) => {
         const assumptions = { ...PROJECTION_DEFAULTS, ...(d.projections ?? {}) };
-        setProjYears(computeProgressiveYearSummaries(computeProgressiveMonths(assumptions)));
+        setProjYears(computeYearSummaries(assumptions));
       })
-      .catch(() => setProjYears(computeProgressiveYearSummaries(computeProgressiveMonths())));
+      .catch(() => setProjYears(computeYearSummaries(PROJECTION_DEFAULTS)));
   }, []);
 
   async function handleDelete(id: string, name: string) {

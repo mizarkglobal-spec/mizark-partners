@@ -7,7 +7,7 @@ import { fmt } from "@/lib/format";
 import HomeFAQ from "@/app/_components/HomeFAQ";
 import HomeMobileMenu from "@/app/_components/HomeMobileMenu";
 import MizarkLogo from "@/components/MizarkLogo";
-import { PROJECTION_DEFAULTS, computeProgressiveMonths, computeProgressiveYearSummaries, progressiveMonthLabel, fmtN } from "@/lib/projections";
+import { PROJECTION_DEFAULTS, computeMonthlyProjections, computeYearSummaries, monthLabel, fmtN } from "@/lib/projections";
 import ProjectionsTabs from "@/app/_components/ProjectionsTabs";
 import InvestmentCalculator from "@/app/_components/InvestmentCalculator";
 
@@ -62,14 +62,14 @@ export default async function LandingPage() {
   // Agreement template (for governing law in terms grid)
   const agmt = { ...AGREEMENT_DEFAULTS, ...(raw.agreement_template ?? {}) };
 
-  // Financial projections — progressive model, params from admin settings
+  // Financial projections
   const projAssumptions = { ...PROJECTION_DEFAULTS, ...(raw.projections ?? {}) };
   const showProjections: boolean = projAssumptions.show_on_homepage;
-  const projAllMonths = showProjections ? computeProgressiveMonths(projAssumptions) : [];
-  const projYears = showProjections ? computeProgressiveYearSummaries(projAllMonths) : [];
-  const projChartData = projAllMonths.map((m, i) => ({
+  const projMonthsRaw = showProjections ? computeMonthlyProjections(projAssumptions) : [];
+  const projYears = showProjections ? computeYearSummaries(projAssumptions) : [];
+  const projChartData = projMonthsRaw.map((m, i) => ({
     month: m.month,
-    label: progressiveMonthLabel(i),
+    label: monthLabel(i),
     academy_funnel: m.challenge_revenue + m.academy_revenue,
     leadash: m.leadash_mrr,
     net_profit: m.net_profit,
@@ -362,14 +362,14 @@ export default async function LandingPage() {
                 The numbers behind the opportunity.
               </h2>
               <p className="text-gray-500 text-[14px] mt-4 max-w-lg">
-                30% monthly compound growth from May 2026 across all three years — no year resets.
+                Projected from a proven ad-to-academy funnel. Revenue compounds continuously from May 2026 across all three years.
               </p>
             </div>
 
             <ProjectionsTabs
               years={projYears}
               allMonths={projChartData}
-              disclaimer={projAssumptions.disclaimer}
+              disclaimer={projAssumptions.disclaimer ?? ""}
             />
           </div>
         </section>
