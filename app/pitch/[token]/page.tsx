@@ -316,8 +316,8 @@ export default async function PitchPage({ params }: Props) {
                     <p className="text-[11px] font-semibold uppercase tracking-widest text-blue-500 mb-3">Leadash SaaS</p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
                       {[
-                        ["Starting MRR", fmtN(projAssumptions.leadash_starting_mrr)],
-                        ["Monthly MRR Growth", `${projAssumptions.leadash_monthly_growth_pct}%`],
+                        ["MRR per ₦1M ad spend", fmtN(projAssumptions.leadash_mrr_per_million)],
+                        ["Monthly Churn", `${projAssumptions.leadash_churn_pct}%`],
                         ["Year 1 Leadash Revenue", fmtN(projYears[0]?.total_leadash_revenue ?? 0)],
                       ].map(([k, v]) => (
                         <div key={k} className="bg-white rounded-xl p-3 border border-blue-100">

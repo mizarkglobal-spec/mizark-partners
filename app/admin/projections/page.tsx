@@ -214,17 +214,18 @@ export default function ProjectionsAdminPage() {
             </h2>
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>Starting Monthly Recurring Revenue ₦</label>
-                <input type="number" className={inputCls} value={proj.leadash_starting_mrr}
-                  onChange={(e) => set("leadash_starting_mrr", Number(e.target.value))} />
+                <label className={labelCls}>New MRR per ₦1M ad spend ₦</label>
+                <input type="number" className={inputCls} value={proj.leadash_mrr_per_million}
+                  onChange={(e) => set("leadash_mrr_per_million", Number(e.target.value))} />
+                <p className="text-white/25 text-xs mt-1">
+                  ₦5M spend → {fmtN(Math.round((5_000_000 / 1_000_000) * proj.leadash_mrr_per_million))} new MRR
+                </p>
               </div>
               <div>
-                <label className={labelCls}>Monthly MRR Growth %</label>
-                <input type="number" step="0.5" className={inputCls} value={proj.leadash_monthly_growth_pct}
-                  onChange={(e) => set("leadash_monthly_growth_pct", Number(e.target.value))} />
-                <p className="text-white/25 text-xs mt-1">
-                  Month 36 MRR → {fmtN(Math.floor(proj.leadash_starting_mrr * Math.pow(1 + proj.leadash_monthly_growth_pct / 100, 35)))}
-                </p>
+                <label className={labelCls}>Monthly Churn %</label>
+                <input type="number" step="0.5" min="0" max="100" className={inputCls} value={proj.leadash_churn_pct}
+                  onChange={(e) => set("leadash_churn_pct", Number(e.target.value))} />
+                <p className="text-white/25 text-xs mt-1">% of existing MRR lost per month</p>
               </div>
             </div>
           </div>
@@ -424,7 +425,7 @@ export default function ProjectionsAdminPage() {
 
           <div className="bg-[#0a1f15] border border-white/5 rounded-2xl p-4">
             <p className="text-white/30 text-xs leading-relaxed">
-              Computed from assumptions above. Leadash MRR compounds continuously across all 36 months. Save to persist — changes reflect sitewide.
+              Computed from assumptions above. Leadash MRR accumulates proportionally to ad spend minus monthly churn — no fixed starting base. Save to persist — changes reflect sitewide.
             </p>
           </div>
         </div>

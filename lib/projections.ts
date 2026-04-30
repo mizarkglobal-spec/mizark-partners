@@ -8,9 +8,9 @@ export interface ProjectionAssumptions {
   challenge_price: number;              // ₦10,000
   academy_price: number;                // ₦120,000
 
-  // Leadash SaaS
-  leadash_starting_mrr: number;         // current MRR
-  leadash_monthly_growth_pct: number;   // % MRR growth per month
+  // Leadash SaaS — MRR proportional to ad spend, with churn
+  leadash_mrr_per_million: number;      // ₦ of new MRR generated per ₦1M ad spend (default 174,000)
+  leadash_churn_pct: number;            // % of cumulative MRR lost each month (default 5)
 
   // Costs
   ops_cost_monthly: number;             // fixed monthly ops
@@ -37,8 +37,8 @@ export const PROJECTION_DEFAULTS: ProjectionAssumptions = {
   academy_conversion_pct: 8,
   challenge_price: 10_000,
   academy_price: 120_000,
-  leadash_starting_mrr: 400_000,
-  leadash_monthly_growth_pct: 12,
+  leadash_mrr_per_million: 174_000,   // ₦870K MRR from ₦5M ad spend → 870K/5M × 1M = 174K
+  leadash_churn_pct: 5,
   ops_cost_monthly: 1_500_000,
   show_on_homepage: true,
   disclaimer:
@@ -70,21 +70,25 @@ export interface YearSummary {
   net_profit: number;
 }
 
-// Generates all 36 months continuously — Leadash MRR compounds from month 0 through month 35
+// Generates all 36 months continuously.
+// Leadash MRR is proportional to ad spend (new subscribers) minus monthly churn on existing MRR.
 export function computeMonthlyProjections(a: ProjectionAssumptions): MonthProjection[] {
   const ramp: number[] = [...a.ad_spend_monthly];
   while (ramp.length < 36) ramp.push(ramp[ramp.length - 1] ?? 0);
-  const months = ramp.slice(0, 36);
+  const adSpends = ramp.slice(0, 36);
 
-  return months.map((adSpend, i) => {
-    // Challenge buyers computed directly from ad spend ÷ cost per challenge
+  let cumulativeMrr = 0;
+  return adSpends.map((adSpend, i) => {
     const challengeBuyers = Math.floor(adSpend / Math.max(a.cpc, 1));
     const academyBuyers = Math.floor(challengeBuyers * a.academy_conversion_pct / 100);
     const challengeRev = challengeBuyers * a.challenge_price;
     const academyRev = academyBuyers * a.academy_price;
-    // Leadash MRR compounds continuously across all 36 months
-    const leadashMrr = Math.floor(a.leadash_starting_mrr * Math.pow(1 + a.leadash_monthly_growth_pct / 100, i));
-    const totalRev = challengeRev + academyRev + leadashMrr;
+
+    // New MRR from this month's ad spend, minus churn on existing base
+    const newMrr = (adSpend / 1_000_000) * a.leadash_mrr_per_million;
+    cumulativeMrr = Math.floor(cumulativeMrr * (1 - a.leadash_churn_pct / 100) + newMrr);
+
+    const totalRev = challengeRev + academyRev + cumulativeMrr;
     const totalExp = adSpend + a.ops_cost_monthly;
 
     return {
@@ -94,7 +98,7 @@ export function computeMonthlyProjections(a: ProjectionAssumptions): MonthProjec
       academy_buyers: academyBuyers,
       challenge_revenue: challengeRev,
       academy_revenue: academyRev,
-      leadash_mrr: leadashMrr,
+      leadash_mrr: cumulativeMrr,
       total_revenue: totalRev,
       total_expenses: totalExp,
       net_profit: totalRev - totalExp,
