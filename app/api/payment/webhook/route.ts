@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { verifyWebhookSignature } from "@/lib/paystack";
-import { sendWelcomePartner } from "@/lib/email";
-import { equityForAmount } from "@/lib/format";
+import { recordInstallment } from "@/lib/installments";
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -39,32 +38,21 @@ export async function POST(req: NextRequest) {
       partner = data;
     }
 
-    if (!partner || partner.status === "active") {
+    if (!partner) {
       return NextResponse.json({ ok: true });
     }
 
-    const now = new Date().toISOString();
-    await db
-      .from("partners")
-      .update({ status: "active", activated_at: now } as any)
-      .eq("id", partner.id);
+    const amount = txData.amount / 100; // Paystack sends kobo
+    const paymentDate = new Date().toISOString().slice(0, 10);
 
-    // Create welcome notification
-    await db.from("partner_notifications").insert({
-      partner_id: partner.id,
-      type: "general",
-      title: "Welcome to Mizark Global Partnership",
-      body: `Alhamdulillah! Your investment has been confirmed. Welcome aboard, ${partner.name}.`,
-      read: false,
-    }).catch(console.error);
-
-    const equityPct = equityForAmount(partner.investment_amount);
-    await sendWelcomePartner({
-      name: partner.name,
-      email: partner.email,
-      equityPct,
-      amount: partner.investment_amount,
-    }).catch(console.error);
+    try {
+      await recordInstallment(db, partner.id, amount, paymentDate, reference ?? null, "paystack", null);
+    } catch (e: any) {
+      if (e.message === "DUPLICATE_REF") {
+        return NextResponse.json({ ok: true });
+      }
+      throw e;
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

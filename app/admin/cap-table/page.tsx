@@ -8,7 +8,11 @@ interface Partner {
   name: string;
   email: string;
   investment_amount: number;
+  committed_amount: number | null;
+  paid_amount: number | null;
   equity_pct: number;
+  equity_committed_pct: number | null;
+  payment_status: string | null;
   status: string;
 }
 
@@ -50,10 +54,11 @@ export default function CapTablePage() {
     }).catch(() => setLoading(false));
   }, []);
 
-  const totalRaised = partners.reduce((s, p) => s + p.investment_amount, 0);
+  const totalPaid = partners.reduce((s, p) => s + Number(p.paid_amount ?? p.investment_amount ?? 0), 0);
+  const totalCommitted = partners.reduce((s, p) => s + Number(p.committed_amount ?? p.investment_amount ?? 0), 0);
   const partnerEquity = partners.reduce((s, p) => s + Number(p.equity_pct), 0);
   const principalEquity = principals.reduce((s, p) => s + Number(p.equity_pct), 0);
-  const remainingPool = 20_000_000 - totalRaised;
+  const remainingPool = 20_000_000 - totalCommitted;
   const totalEquityAllocated = principalEquity + partnerEquity;
   const unallocated = Math.max(0, 100 - totalEquityAllocated);
 
@@ -114,24 +119,37 @@ export default function CapTablePage() {
       {/* Progress */}
       <div className="bg-[#1a3a2a] border border-white/10 rounded-2xl p-6">
         <div className="flex justify-between text-sm mb-2">
-          <span className="text-white/50">Partner Pool Raised</span>
-          <span className="text-white font-semibold">{fmt.naira(totalRaised)} / ₦20,000,000</span>
+          <span className="text-white/50">Partner Pool — Committed</span>
+          <span className="text-white font-semibold">{fmt.naira(totalCommitted)} / ₦20,000,000</span>
         </div>
-        <div className="w-full bg-white/10 rounded-full h-3 mb-3">
-          <div className="bg-gradient-to-r from-[#40916c] to-[#74c69d] h-3 rounded-full transition-all" style={{ width: `${Math.min((totalRaised / 20_000_000) * 100, 100)}%` }} />
+        <div className="w-full bg-white/10 rounded-full h-3 mb-1 relative">
+          <div className="bg-gradient-to-r from-[#40916c] to-[#74c69d] h-3 rounded-full transition-all" style={{ width: `${Math.min((totalCommitted / 20_000_000) * 100, 100)}%` }} />
+          {totalPaid < totalCommitted && (
+            <div className="absolute top-0 left-0 h-3 rounded-full bg-[#74c69d] opacity-100" style={{ width: `${Math.min((totalPaid / 20_000_000) * 100, 100)}%` }} />
+          )}
         </div>
-        <div className="grid grid-cols-3 gap-4 text-sm">
+        {totalPaid < totalCommitted && (
+          <div className="flex items-center gap-3 text-xs mb-3">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#74c69d] inline-block" />Paid-up: {fmt.naira(totalPaid)}</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-white/20 inline-block" />Outstanding: {fmt.naira(totalCommitted - totalPaid)}</span>
+          </div>
+        )}
+        <div className="grid grid-cols-4 gap-4 text-sm mt-3">
           <div>
             <div className="text-white/40 text-xs mb-1">Active Partners</div>
             <div className="text-white font-semibold">{partners.length}</div>
           </div>
           <div>
-            <div className="text-white/40 text-xs mb-1">Partner Equity Sold</div>
+            <div className="text-white/40 text-xs mb-1">Active Equity</div>
             <div className="text-[#74c69d] font-semibold">{partnerEquity.toFixed(3)}%</div>
           </div>
           <div>
+            <div className="text-white/40 text-xs mb-1">Paid-up Capital</div>
+            <div className="text-[#d4a843] font-semibold">{fmt.naira(totalPaid)}</div>
+          </div>
+          <div>
             <div className="text-white/40 text-xs mb-1">Pool Remaining</div>
-            <div className="text-[#d4a843] font-semibold">{fmt.naira(remainingPool)}</div>
+            <div className="text-white/60 font-semibold">{fmt.naira(remainingPool)}</div>
           </div>
         </div>
       </div>
@@ -176,13 +194,24 @@ export default function CapTablePage() {
                     <td className="px-4 py-2.5 text-right text-[#d4a843] font-semibold">{Number(p.equity_pct).toFixed(3)}%</td>
                   </tr>
                 ))}
-                {partners.map((p) => (
-                  <tr key={p.id} className="border-b border-white/5">
-                    <td className="px-4 py-2.5 text-white">{p.name}</td>
-                    <td className="px-4 py-2.5 text-white/50 text-xs">Partner</td>
-                    <td className="px-4 py-2.5 text-right text-[#74c69d] font-semibold">{fmt.percent(Number(p.equity_pct))}</td>
-                  </tr>
-                ))}
+                {partners.map((p) => {
+                  const isPartial = p.payment_status === "partial" || p.payment_status === "awaiting_first";
+                  return (
+                    <tr key={p.id} className="border-b border-white/5">
+                      <td className="px-4 py-2.5">
+                        <div className="text-white">{p.name}</div>
+                        {isPartial && <div className="text-amber-400 text-xs mt-0.5">Partial payment</div>}
+                      </td>
+                      <td className="px-4 py-2.5 text-white/50 text-xs">Partner</td>
+                      <td className="px-4 py-2.5 text-right">
+                        <div className="text-[#74c69d] font-semibold">{fmt.percent(Number(p.equity_pct))}</div>
+                        {p.equity_committed_pct && Number(p.equity_committed_pct) !== Number(p.equity_pct) && (
+                          <div className="text-amber-400/60 text-xs">{fmt.percent(Number(p.equity_committed_pct))} committed</div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
                 {unallocated > 0.001 && (
                   <tr className="border-b border-white/5">
                     <td className="px-4 py-2.5 text-white/30 italic">Unallocated</td>

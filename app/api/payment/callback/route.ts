@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/server";
 import { verifyTransaction } from "@/lib/paystack";
-import { sendWelcomePartner } from "@/lib/email";
-import { equityForAmount } from "@/lib/format";
+import { recordInstallment } from "@/lib/installments";
 
 export async function GET(req: NextRequest) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://partners.mizarkglobal.com";
@@ -37,30 +36,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${appUrl}/dashboard`);
     }
 
-    if (partner.status !== "active") {
-      const now = new Date().toISOString();
-      await db
-        .from("partners")
-        .update({ status: "active", activated_at: now } as any)
-        .eq("id", partner.id);
+    const amount = txData.amount / 100; // Paystack sends kobo
+    const paymentDate = new Date().toISOString().slice(0, 10);
 
-      // Create welcome notification
-      await db.from("partner_notifications").insert({
-        partner_id: partner.id,
-        type: "general",
-        title: "Welcome to Mizark Global Partnership",
-        body: `Alhamdulillah! Your investment of ₦${partner.investment_amount.toLocaleString("en-NG")} has been confirmed. Welcome aboard, ${partner.name}.`,
-        read: false,
-      }).catch(console.error);
-
-      // Send welcome email
-      const equityPct = equityForAmount(partner.investment_amount);
-      await sendWelcomePartner({
-        name: partner.name,
-        email: partner.email,
-        equityPct,
-        amount: partner.investment_amount,
-      }).catch(console.error);
+    try {
+      await recordInstallment(db, partner.id, amount, paymentDate, reference, "paystack", null);
+    } catch (e: any) {
+      if (e.message !== "DUPLICATE_REF") {
+        console.error("[callback] recordInstallment error:", e);
+      }
     }
 
     return NextResponse.redirect(`${appUrl}/payment/success`);
