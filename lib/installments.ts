@@ -48,8 +48,15 @@ export async function recordInstallment(
   const currentPaid = Number(partner.paid_amount ?? 0);
   const committedAmount = Number(partner.committed_amount ?? partner.investment_amount ?? 0);
   const newPaidAmount = currentPaid + amount;
-  const newEquityPct = equityForAmount(newPaidAmount);
-  const committedEquityPct = equityForAmount(committedAmount);
+  // Use the partner's deal equity (equity_committed_pct) as the basis.
+  // Active equity scales proportionally: paid / committed × deal_equity.
+  // Fall back to formula only if no deal equity is set yet.
+  const committedEquityPct = partner.equity_committed_pct != null
+    ? Number(partner.equity_committed_pct)
+    : equityForAmount(committedAmount);
+  const newEquityPct = committedAmount > 0
+    ? Number(((newPaidAmount / committedAmount) * committedEquityPct).toFixed(6))
+    : equityForAmount(newPaidAmount);
   const isComplete = newPaidAmount >= committedAmount;
   const isFirstPayment = partner.status !== "active";
 
@@ -75,7 +82,8 @@ export async function recordInstallment(
     equity_pct: newEquityPct,
     payment_status: isComplete ? "complete" : "partial",
     committed_amount: committedAmount,
-    equity_committed_pct: committedEquityPct,
+    // Preserve equity_committed_pct — only set it if it hasn't been set yet
+    ...(partner.equity_committed_pct == null && { equity_committed_pct: committedEquityPct }),
   };
 
   if (isFirstPayment) {

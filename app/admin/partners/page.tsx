@@ -354,7 +354,7 @@ export default function AdminPartnersPage() {
                                 <div className="text-white/40 text-xs uppercase tracking-widest">Partner Details</div>
                                 {editingId !== p.id ? (
                                   <button
-                                    onClick={() => { setEditingId(p.id); setEditForm({ name: p.name, email: p.email, phone: p.phone, committed_amount: p.committed_amount ?? p.investment_amount, equity_pct: p.equity_pct, start_date: p.start_date, term_end_date: p.term_end_date, status: p.status, notes: p.notes }); }}
+                                    onClick={() => { setEditingId(p.id); setEditForm({ name: p.name, email: p.email, phone: p.phone, committed_amount: p.committed_amount ?? p.investment_amount, equity_committed_pct: p.equity_committed_pct ?? p.equity_pct, start_date: p.start_date, term_end_date: p.term_end_date, status: p.status, notes: p.notes }); }}
                                     className="flex items-center gap-1.5 text-white/40 hover:text-white text-xs px-3 py-1.5 rounded-lg border border-white/10 hover:border-white/30 transition-colors"
                                   >
                                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -387,7 +387,10 @@ export default function AdminPartnersPage() {
                                   <div><label className={labelCls}>Email</label><input className={inputCls} value={editForm.email ?? ""} onChange={(e) => setEditForm(f => ({...f, email: e.target.value}))} /></div>
                                   <div><label className={labelCls}>Phone</label><input className={inputCls} value={editForm.phone ?? ""} onChange={(e) => setEditForm(f => ({...f, phone: e.target.value}))} /></div>
                                   <div><label className={labelCls}>Committed Amount (₦)</label><input type="number" className={inputCls} value={editForm.committed_amount ?? ""} onChange={(e) => setEditForm(f => ({...f, committed_amount: Number(e.target.value)}))} /></div>
-                                  <div><label className={labelCls}>Equity % (override)</label><input type="number" step="0.000001" className={inputCls} value={editForm.equity_pct ?? ""} onChange={(e) => setEditForm(f => ({...f, equity_pct: Number(e.target.value)}))} /></div>
+                                  <div>
+                                    <label className={labelCls}>Deal Equity % (at full payment)</label>
+                                    <input type="number" step="0.000001" className={inputCls} value={editForm.equity_committed_pct ?? ""} onChange={(e) => setEditForm(f => ({...f, equity_committed_pct: Number(e.target.value)}))} />
+                                  </div>
                                   <div>
                                     <label className={labelCls}>Status</label>
                                     <select className={inputCls} value={editForm.status ?? ""} onChange={(e) => setEditForm(f => ({...f, status: e.target.value}))}>

@@ -26,11 +26,6 @@ export async function PATCH(
     if (field in body) update[field] = body[field];
   }
 
-  // Recalculate committed equity when committed_amount changes
-  if ("committed_amount" in update && !("equity_committed_pct" in body)) {
-    update.equity_committed_pct = equityForAmount(Number(update.committed_amount));
-  }
-
   // Legacy: recalculate equity if investment_amount changed and equity_pct not explicitly set
   if ("investment_amount" in update && !("equity_pct" in body)) {
     update.equity_pct = equityForAmount(Number(update.investment_amount));
