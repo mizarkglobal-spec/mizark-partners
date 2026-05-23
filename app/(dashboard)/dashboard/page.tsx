@@ -35,6 +35,7 @@ export default async function DashboardPage() {
     { data: distributions },
     { data: announcements },
     { data: notifications },
+    { data: installments },
   ] = await Promise.all([
     db
       .from("distributions")
@@ -52,6 +53,12 @@ export default async function DashboardPage() {
       .eq("partner_id", partner.id)
       .order("created_at", { ascending: false })
       .limit(5),
+    db
+      .from("partner_installments")
+      .select("amount, payment_date, method")
+      .eq("partner_id", partner.id)
+      .order("payment_date", { ascending: false })
+      .limit(5),
   ]);
 
   const totalEarned = (distributions || [])
@@ -61,6 +68,15 @@ export default async function DashboardPage() {
   const lastQuarter = (distributions || [])
     .filter((d: any) => d.status !== "failed")
     .at(-1);
+
+  // Installment / payment tracking
+  const committedAmount  = Number(partner.committed_amount ?? partner.investment_amount ?? 0);
+  const paidAmount       = Number(partner.paid_amount ?? partner.investment_amount ?? 0);
+  const activeEquityPct  = Number(partner.equity_pct ?? 0);
+  const committedEquityPct = Number(partner.equity_committed_pct ?? partner.equity_pct ?? 0);
+  const outstandingAmount = Math.max(0, committedAmount - paidAmount);
+  const paymentPct        = committedAmount > 0 ? Math.min(100, (paidAmount / committedAmount) * 100) : 100;
+  const isPartial         = outstandingAmount > 0;
 
   // Build sparkline data
   type SparkPoint = { period: string; cumulative: number };
@@ -76,6 +92,10 @@ export default async function DashboardPage() {
     return `Q${q} ${now.getFullYear()}`;
   };
 
+  const METHOD_LABEL: Record<string, string> = {
+    paystack: "Paystack", bank_transfer: "Bank Transfer", manual: "Manual", other: "Other",
+  };
+
   return (
     <div className="p-6 sm:p-8 space-y-6">
       {/* Header */}
@@ -86,23 +106,77 @@ export default async function DashboardPage() {
         <p className="text-gray-500 text-sm">Welcome to your Mizark Global partner dashboard.</p>
       </div>
 
+      {/* Investment progress banner — only for partial payers */}
+      {isPartial && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <div className="text-amber-800 font-semibold text-sm">Investment In Progress</div>
+              <div className="text-amber-600 text-xs mt-0.5">
+                Your active equity increases with each payment.
+              </div>
+            </div>
+            <span className="bg-amber-100 text-amber-700 border border-amber-300 text-xs font-bold px-3 py-1 rounded-full">
+              {paymentPct.toFixed(0)}% paid
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-3 mb-3 text-sm">
+            <div>
+              <div className="text-amber-500 text-xs mb-0.5">Paid-up</div>
+              <div className="font-bold text-[#111827]">{fmt.naira(paidAmount)}</div>
+            </div>
+            <div>
+              <div className="text-amber-500 text-xs mb-0.5">Committed</div>
+              <div className="font-bold text-[#111827]">{fmt.naira(committedAmount)}</div>
+            </div>
+            <div>
+              <div className="text-amber-500 text-xs mb-0.5">Outstanding</div>
+              <div className="font-bold text-amber-700">{fmt.naira(outstandingAmount)}</div>
+            </div>
+          </div>
+          <div className="h-2 bg-amber-200 rounded-full">
+            <div
+              className="h-2 bg-amber-500 rounded-full transition-all"
+              style={{ width: `${paymentPct.toFixed(1)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        {/* Capital card */}
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 sm:p-5">
-          <div className="text-gray-400 text-xs uppercase tracking-wide mb-2">Investment</div>
-          <div className="text-lg sm:text-2xl font-bold text-[#d4a843] truncate">{fmt.naira(partner.investment_amount)}</div>
-          <div className="text-gray-300 text-xs mt-1">Original capital</div>
+          <div className="text-gray-400 text-xs uppercase tracking-wide mb-2">
+            {isPartial ? "Paid-up Capital" : "Investment"}
+          </div>
+          <div className="text-lg sm:text-2xl font-bold text-[#d4a843] truncate">
+            {fmt.naira(paidAmount)}
+          </div>
+          {isPartial ? (
+            <div className="text-gray-300 text-xs mt-1">of {fmt.naira(committedAmount)} committed</div>
+          ) : (
+            <div className="text-gray-300 text-xs mt-1">Fully invested</div>
+          )}
         </div>
+
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 sm:p-5">
           <div className="text-gray-400 text-xs uppercase tracking-wide mb-2">Total Earned</div>
           <div className="text-lg sm:text-2xl font-bold text-[#40916c] truncate">{fmt.naira(totalEarned)}</div>
           <div className="text-gray-300 text-xs mt-1">All distributions</div>
         </div>
+
+        {/* Equity card */}
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 sm:p-5">
-          <div className="text-gray-400 text-xs uppercase tracking-wide mb-2">Equity Stake</div>
-          <div className="text-lg sm:text-2xl font-bold text-[#111827]">{fmt.percent(Number(partner.equity_pct))}</div>
-          <div className="text-gray-300 text-xs mt-1">Of Mizark Global</div>
+          <div className="text-gray-400 text-xs uppercase tracking-wide mb-2">Active Equity</div>
+          <div className="text-lg sm:text-2xl font-bold text-[#111827]">{fmt.percent(activeEquityPct)}</div>
+          {isPartial ? (
+            <div className="text-amber-500 text-xs mt-1">{fmt.percent(committedEquityPct)} at full payment</div>
+          ) : (
+            <div className="text-gray-300 text-xs mt-1">Of Mizark Global</div>
+          )}
         </div>
+
         <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 sm:p-5">
           <div className="text-gray-400 text-xs uppercase tracking-wide mb-2">Next Distribution</div>
           <div className="text-lg sm:text-2xl font-bold text-[#111827]">{nextDistributionPeriod()}</div>
@@ -124,40 +198,85 @@ export default async function DashboardPage() {
           )}
         </div>
 
-        {/* Latest Quarter Summary */}
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
-          <h3 className="text-[#111827] font-semibold mb-4">Latest Quarter</h3>
-          {lastQuarter ? (
-            <div className="space-y-3">
-              <div>
-                <div className="text-gray-400 text-xs mb-1">Period</div>
-                <div className="text-[#111827] font-medium">{fmt.quarter(lastQuarter.period)}</div>
+        {/* Equity + Payment summary */}
+        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-5">
+          {/* Equity breakdown */}
+          <div>
+            <h3 className="text-[#111827] font-semibold mb-3">Your Stake</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Active equity</span>
+                <span className="font-bold text-[#40916c]">{fmt.percent(activeEquityPct)}</span>
               </div>
-              <div>
-                <div className="text-gray-400 text-xs mb-1">Net Profit (Business)</div>
-                <div className="text-[#111827] font-medium">{fmt.naira(lastQuarter.net_profit)}</div>
+              {isPartial && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Committed equity</span>
+                  <span className="font-semibold text-amber-600">{fmt.percent(committedEquityPct)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Paid-up capital</span>
+                <span className="font-semibold text-[#111827]">{fmt.naira(paidAmount)}</span>
               </div>
-              <div>
-                <div className="text-gray-400 text-xs mb-1">Your Share</div>
-                <div className="text-[#40916c] font-medium">{fmt.percent(Number(lastQuarter.partner_share))}</div>
-              </div>
-              <div>
-                <div className="text-gray-400 text-xs mb-1">Distribution Amount</div>
-                <div className="text-[#d4a843] font-bold text-xl">{fmt.naira(lastQuarter.amount)}</div>
-              </div>
-              <div>
-                <div className="text-gray-400 text-xs mb-1">Status</div>
-                <span className={`inline-block text-xs px-2 py-0.5 rounded-full font-medium ${
-                  lastQuarter.status === "paid"
-                    ? "bg-green-100 text-green-700 border border-green-200"
-                    : "bg-yellow-100 text-yellow-700 border border-yellow-200"
-                }`}>
-                  {lastQuarter.status}
-                </span>
+              {isPartial && (
+                <>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Committed</span>
+                    <span className="font-semibold text-[#111827]">{fmt.naira(committedAmount)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-amber-500">Outstanding</span>
+                    <span className="font-semibold text-amber-600">{fmt.naira(outstandingAmount)}</span>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 rounded-full mt-2">
+                    <div className="h-1.5 bg-[#40916c] rounded-full" style={{ width: `${paymentPct.toFixed(1)}%` }} />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Recent payments */}
+          {installments && installments.length > 0 && (
+            <div className="border-t border-gray-100 pt-4">
+              <div className="text-[#111827] font-semibold text-sm mb-3">Recent Payments</div>
+              <div className="space-y-2">
+                {installments.map((inst: any, i: number) => (
+                  <div key={i} className="flex justify-between text-xs">
+                    <div>
+                      <span className="text-gray-500">{fmt.shortDate(inst.payment_date)}</span>
+                      <span className="text-gray-300 ml-2">{METHOD_LABEL[inst.method] ?? inst.method}</span>
+                    </div>
+                    <span className="font-semibold text-[#d4a843]">{fmt.naira(inst.amount)}</span>
+                  </div>
+                ))}
               </div>
             </div>
-          ) : (
-            <div className="text-gray-400 text-sm">No quarterly data yet.</div>
+          )}
+
+          {/* Latest distribution */}
+          {lastQuarter && (
+            <div className="border-t border-gray-100 pt-4">
+              <div className="text-[#111827] font-semibold text-sm mb-3">Latest Distribution</div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Period</span>
+                  <span className="font-medium text-[#111827]">{fmt.quarter(lastQuarter.period)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Amount</span>
+                  <span className="font-bold text-[#d4a843]">{fmt.naira(lastQuarter.amount)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Status</span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    lastQuarter.status === "paid"
+                      ? "bg-green-100 text-green-700 border border-green-200"
+                      : "bg-yellow-100 text-yellow-700 border border-yellow-200"
+                  }`}>{lastQuarter.status}</span>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>
