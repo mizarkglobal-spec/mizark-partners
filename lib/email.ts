@@ -222,7 +222,7 @@ export async function sendAdminPaymentAlert(opts: {
   isFirstPayment: boolean;
   isComplete: boolean;
 }) {
-  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  const adminEmail = process.env.ADMIN_EMAIL;
   if (!adminEmail) return;
 
   const fmtN = (n: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);
