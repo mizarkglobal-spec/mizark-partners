@@ -113,60 +113,56 @@ export async function recordInstallment(
   // Receipt URL for email buttons
   const receiptUrl = `${APP_URL}/api/admin/partners/${partnerId}/receipt?installment_id=${installment.id}`;
 
-  // Emails — fire-and-forget, don't block the response
-  (async () => {
-    try {
-      if (isFirstPayment) {
-        // Generate magic link so partner can set up their account / access dashboard
-        const adminDb = (await import("@/lib/supabase/server")).createAdminClient();
-        const { data: linkData } = await adminDb.auth.admin.generateLink({
-          type: "magiclink",
-          email: partner.email,
-          options: { redirectTo: `${APP_URL}/api/auth/callback?next=/setup-account` },
-        });
-        await sendWelcomePartner({
-          name: partner.name,
-          email: partner.email,
-          equityPct: newEquityPct,
-          amount,
-          setupUrl: linkData?.properties?.action_link,
-        });
-      } else {
-        // Subsequent payment — send confirmation with dashboard link
-        await sendPaymentConfirmation({
-          name: partner.name,
-          email: partner.email,
-          amount,
-          totalPaid: newPaidAmount,
-          committedAmount,
-          activeEquityPct: newEquityPct,
-          committedEquityPct,
-          isComplete,
-          installmentReceiptUrl: receiptUrl,
-        });
-      }
-    } catch (e) {
-      console.error("[installment] partner email error:", e);
-    }
-
-    // Admin alert on every payment
-    try {
-      await sendAdminPaymentAlert({
-        partnerName: partner.name,
-        partnerEmail: partner.email,
+  // Partner email
+  try {
+    if (isFirstPayment) {
+      const adminDb = (await import("@/lib/supabase/server")).createAdminClient();
+      const { data: linkData } = await adminDb.auth.admin.generateLink({
+        type: "magiclink",
+        email: partner.email,
+        options: { redirectTo: `${APP_URL}/api/auth/callback?next=/setup-account` },
+      });
+      await sendWelcomePartner({
+        name: partner.name,
+        email: partner.email,
+        equityPct: newEquityPct,
+        amount,
+        setupUrl: linkData?.properties?.action_link,
+      });
+    } else {
+      await sendPaymentConfirmation({
+        name: partner.name,
+        email: partner.email,
         amount,
         totalPaid: newPaidAmount,
         committedAmount,
         activeEquityPct: newEquityPct,
-        method,
-        reference,
-        isFirstPayment,
+        committedEquityPct,
         isComplete,
+        installmentReceiptUrl: receiptUrl,
       });
-    } catch (e) {
-      console.error("[installment] admin alert error:", e);
     }
-  })();
+  } catch (e) {
+    console.error("[installment] partner email error:", e);
+  }
+
+  // Admin alert
+  try {
+    await sendAdminPaymentAlert({
+      partnerName: partner.name,
+      partnerEmail: partner.email,
+      amount,
+      totalPaid: newPaidAmount,
+      committedAmount,
+      activeEquityPct: newEquityPct,
+      method,
+      reference,
+      isFirstPayment,
+      isComplete,
+    });
+  } catch (e) {
+    console.error("[installment] admin alert error:", e);
+  }
 
   return {
     installment,
