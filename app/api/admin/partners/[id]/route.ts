@@ -18,6 +18,7 @@ export async function PATCH(
   const allowed = [
     "name", "email", "phone", "investment_amount", "equity_pct",
     "start_date", "term_end_date", "status", "notes", "activated_at",
+    "committed_amount", "equity_committed_pct",
   ] as const;
 
   const update: Record<string, any> = {};
@@ -25,7 +26,12 @@ export async function PATCH(
     if (field in body) update[field] = body[field];
   }
 
-  // Recalculate equity if investment_amount changed and equity_pct not explicitly set
+  // Recalculate committed equity when committed_amount changes
+  if ("committed_amount" in update && !("equity_committed_pct" in body)) {
+    update.equity_committed_pct = equityForAmount(Number(update.committed_amount));
+  }
+
+  // Legacy: recalculate equity if investment_amount changed and equity_pct not explicitly set
   if ("investment_amount" in update && !("equity_pct" in body)) {
     update.equity_pct = equityForAmount(Number(update.investment_amount));
   }
