@@ -149,6 +149,119 @@ export async function sendWelcomePartner(opts: { name: string; email: string; eq
   });
 }
 
+// ── Payment confirmation (partner) ─────────────────────────────────────────
+export async function sendPaymentConfirmation(opts: {
+  name: string;
+  email: string;
+  amount: number;
+  totalPaid: number;
+  committedAmount: number;
+  activeEquityPct: number;
+  committedEquityPct: number;
+  isComplete: boolean;
+  installmentReceiptUrl: string;
+}) {
+  const fmtN = (n: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);
+  const outstanding = opts.committedAmount - opts.totalPaid;
+  const pctDone = Math.min(100, (opts.totalPaid / opts.committedAmount) * 100);
+  const dashUrl = `${APP_URL}/dashboard`;
+
+  await sendEmail({
+    to: opts.email,
+    subject: opts.isComplete
+      ? `Investment complete — ${opts.activeEquityPct.toFixed(3)}% equity active`
+      : `Payment received — ${fmtN(opts.amount)}`,
+    text: opts.isComplete
+      ? `Assalamu Alaikum ${opts.name},\n\nAlhamdulillah! Your payment of ${fmtN(opts.amount)} has been received. Your full investment commitment of ${fmtN(opts.committedAmount)} is now complete.\n\nActive equity: ${opts.activeEquityPct.toFixed(3)}%\n\nView your dashboard: ${dashUrl}\n\n— Mizark Global Team`
+      : `Assalamu Alaikum ${opts.name},\n\nYour payment of ${fmtN(opts.amount)} has been received.\n\nTotal paid: ${fmtN(opts.totalPaid)} / ${fmtN(opts.committedAmount)}\nOutstanding: ${fmtN(outstanding)}\nActive equity: ${opts.activeEquityPct.toFixed(3)}%\n\nView dashboard: ${dashUrl}\n\n— Mizark Global Team`,
+    html: baseEmail(`
+      <p style="font-size:16px;margin-top:0">Assalamu Alaikum <strong>${opts.name}</strong>,</p>
+      ${opts.isComplete
+        ? `<p>Alhamdulillah! Your investment commitment is <strong style="color:#16a34a">fully complete</strong>. Barakallahu feeki.</p>`
+        : `<p style="color:#6b7280">Your payment has been received and your equity position has been updated.</p>`
+      }
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin:24px 0">
+        <p style="margin:0 0 12px;font-weight:600;color:#15803d;font-size:13px;text-transform:uppercase;letter-spacing:0.5px">Payment Received</p>
+        <table style="font-size:14px;color:#374151;border-spacing:0;width:100%">
+          <tr><td style="padding:4px 0;color:#6b7280">Amount</td><td style="text-align:right;font-weight:700;font-size:16px">${fmtN(opts.amount)}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280">Total Paid</td><td style="text-align:right;font-weight:600">${fmtN(opts.totalPaid)}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280">Committed</td><td style="text-align:right">${fmtN(opts.committedAmount)}</td></tr>
+          ${!opts.isComplete ? `<tr><td style="padding:4px 0;color:#92400e">Outstanding</td><td style="text-align:right;color:#92400e;font-weight:600">${fmtN(outstanding)}</td></tr>` : ""}
+        </table>
+        <div style="background:#e5e7eb;border-radius:4px;height:6px;margin-top:16px">
+          <div style="background:#16a34a;height:6px;border-radius:4px;width:${pctDone.toFixed(0)}%"></div>
+        </div>
+        <p style="margin:6px 0 0;font-size:11px;color:#6b7280;text-align:right">${pctDone.toFixed(0)}% of commitment paid</p>
+      </div>
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:16px 0">
+        <table style="font-size:13px;color:#374151;border-spacing:0;width:100%">
+          <tr><td style="padding:3px 0;color:#6b7280">Active Equity (paid-up)</td><td style="text-align:right;font-weight:700;color:#16a34a">${opts.activeEquityPct.toFixed(3)}%</td></tr>
+          ${opts.committedEquityPct !== opts.activeEquityPct ? `<tr><td style="padding:3px 0;color:#6b7280">Committed Equity (full)</td><td style="text-align:right;color:#d97706">${opts.committedEquityPct.toFixed(3)}%</td></tr>` : ""}
+        </table>
+      </div>
+      <p style="color:#6b7280;font-size:13px">You receive profit distributions on your <strong>active (paid-up) equity</strong>. Your active equity increases with each installment.</p>
+      <div style="margin:24px 0;text-align:center">
+        <a href="${dashUrl}" style="display:inline-block;background:#1a3a2a;color:#fff;padding:13px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:14px;margin-right:8px">View Dashboard →</a>
+        <a href="${opts.installmentReceiptUrl}" style="display:inline-block;background:#f0fdf4;color:#15803d;padding:13px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:14px;border:1px solid #bbf7d0">Download Receipt</a>
+      </div>
+      <p style="color:#9ca3af;font-size:13px;margin-top:32px">— Mizark Global Partnership Team</p>
+    `),
+  });
+}
+
+// ── Admin payment alert ─────────────────────────────────────────────────────
+export async function sendAdminPaymentAlert(opts: {
+  partnerName: string;
+  partnerEmail: string;
+  amount: number;
+  totalPaid: number;
+  committedAmount: number;
+  activeEquityPct: number;
+  method: string;
+  reference: string | null;
+  isFirstPayment: boolean;
+  isComplete: boolean;
+}) {
+  const adminEmail = process.env.ADMIN_NOTIFICATION_EMAIL;
+  if (!adminEmail) return;
+
+  const fmtN = (n: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);
+  const outstanding = opts.committedAmount - opts.totalPaid;
+  const METHOD_LABEL: Record<string, string> = { paystack: "Paystack", bank_transfer: "Bank Transfer", manual: "Manual", other: "Other" };
+  const adminUrl = `${APP_URL}/admin/partners`;
+
+  const badge = opts.isComplete ? "✅ Commitment Complete" : opts.isFirstPayment ? "🟡 First Payment — Partner Activated" : "💰 Installment Received";
+
+  await sendEmail({
+    to: adminEmail,
+    subject: `[Mizark] ${badge} — ${opts.partnerName} paid ${fmtN(opts.amount)}`,
+    text: `${badge}\n\nPartner: ${opts.partnerName} (${opts.partnerEmail})\nAmount: ${fmtN(opts.amount)}\nMethod: ${METHOD_LABEL[opts.method] ?? opts.method}${opts.reference ? `\nReference: ${opts.reference}` : ""}\n\nTotal paid: ${fmtN(opts.totalPaid)} / ${fmtN(opts.committedAmount)}\nActive equity: ${opts.activeEquityPct.toFixed(3)}%\nOutstanding: ${outstanding > 0 ? fmtN(outstanding) : "None — complete"}\n\nAdmin panel: ${adminUrl}`,
+    html: baseEmail(`
+      <p style="margin:0 0 4px;font-weight:700;font-size:16px">${badge}</p>
+      <p style="color:#6b7280;font-size:14px;margin-top:4px">A payment has been logged for a partner.</p>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin:20px 0">
+        <p style="margin:0 0 12px;font-weight:600;color:#15803d;font-size:12px;text-transform:uppercase;letter-spacing:0.5px">Payment Details</p>
+        <table style="font-size:14px;color:#374151;border-spacing:0;width:100%">
+          <tr><td style="padding:4px 0;color:#6b7280">Partner</td><td style="text-align:right;font-weight:600">${opts.partnerName}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280">Email</td><td style="text-align:right">${opts.partnerEmail}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280">Amount</td><td style="text-align:right;font-weight:700;font-size:16px">${fmtN(opts.amount)}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280">Method</td><td style="text-align:right">${METHOD_LABEL[opts.method] ?? opts.method}</td></tr>
+          ${opts.reference ? `<tr><td style="padding:4px 0;color:#6b7280">Reference</td><td style="text-align:right;font-size:12px">${opts.reference}</td></tr>` : ""}
+        </table>
+      </div>
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin:16px 0">
+        <table style="font-size:13px;color:#374151;border-spacing:0;width:100%">
+          <tr><td style="padding:3px 0;color:#6b7280">Total Paid</td><td style="text-align:right;font-weight:600">${fmtN(opts.totalPaid)} / ${fmtN(opts.committedAmount)}</td></tr>
+          <tr><td style="padding:3px 0;color:#6b7280">Active Equity</td><td style="text-align:right;font-weight:700;color:#16a34a">${opts.activeEquityPct.toFixed(3)}%</td></tr>
+          <tr><td style="padding:3px 0;color:#6b7280">Outstanding</td><td style="text-align:right;${outstanding > 0 ? "color:#92400e;font-weight:600" : "color:#16a34a"}">${outstanding > 0 ? fmtN(outstanding) : "Complete ✓"}</td></tr>
+        </table>
+      </div>
+      <p style="margin:24px 0"><a href="${adminUrl}" style="display:inline-block;background:#1a3a2a;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:600;font-size:13px">Open Admin Panel →</a></p>
+      <p style="color:#9ca3af;font-size:12px">This is an automated notification from the Mizark Global partner portal.</p>
+    `),
+  });
+}
+
 // ── Admin invite ────────────────────────────────────────────────────────────
 export async function sendAdminInvite(opts: { name?: string; email: string; invitedBy: string; loginUrl: string }) {
   const displayName = opts.name || opts.email;

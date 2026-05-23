@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { equityForAmount } from "@/lib/format";
-import { sendWelcomePartner } from "@/lib/email";
+import { sendWelcomePartner, sendPaymentConfirmation, sendAdminPaymentAlert } from "@/lib/email";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://partners.mizarkglobal.com";
 
@@ -49,6 +49,7 @@ export async function recordInstallment(
   const committedAmount = Number(partner.committed_amount ?? partner.investment_amount ?? 0);
   const newPaidAmount = currentPaid + amount;
   const newEquityPct = equityForAmount(newPaidAmount);
+  const committedEquityPct = equityForAmount(committedAmount);
   const isComplete = newPaidAmount >= committedAmount;
   const isFirstPayment = partner.status !== "active";
 
@@ -74,7 +75,7 @@ export async function recordInstallment(
     equity_pct: newEquityPct,
     payment_status: isComplete ? "complete" : "partial",
     committed_amount: committedAmount,
-    equity_committed_pct: equityForAmount(committedAmount),
+    equity_committed_pct: committedEquityPct,
   };
 
   if (isFirstPayment) {
@@ -85,49 +86,79 @@ export async function recordInstallment(
   const { error: updErr } = await db.from("partners").update(updates).eq("id", partnerId);
   if (updErr) throw new Error("Failed to update partner: " + updErr.message);
 
-  // Notifications
-  if (isFirstPayment) {
-    // Welcome notification + email
-    db.from("partner_notifications").insert({
-      partner_id: partnerId,
-      type: "general",
-      title: "Welcome to Mizark Global Partnership",
-      body: `Alhamdulillah! Your payment of ₦${amount.toLocaleString("en-NG")} has been confirmed. You now hold ${newEquityPct.toFixed(3)}% active equity. Welcome aboard, ${partner.name}.`,
-      read: false,
-    }).then(null, console.error);
-
-    try {
-      const adminDb = (await import("@/lib/supabase/server")).createAdminClient();
-      const { data: linkData } = await adminDb.auth.admin.generateLink({
-        type: "magiclink",
-        email: partner.email,
-        options: { redirectTo: `${APP_URL}/api/auth/callback?next=/setup-account` },
-      });
-      await sendWelcomePartner({
-        name: partner.name,
-        email: partner.email,
-        equityPct: newEquityPct,
-        amount,
-        setupUrl: linkData?.properties?.action_link,
-      });
-    } catch (e) {
-      console.error("[installment] welcome email error:", e);
-    }
-  } else {
-    // Payment received notification
-    const outstanding = committedAmount - newPaidAmount;
-    const body = isComplete
+  // In-app notification
+  const outstanding = committedAmount - newPaidAmount;
+  const notifBody = isFirstPayment
+    ? `Alhamdulillah! Your payment of ₦${amount.toLocaleString("en-NG")} has been confirmed. You now hold ${newEquityPct.toFixed(3)}% active equity. Welcome aboard, ${partner.name}.`
+    : isComplete
       ? `Payment of ₦${amount.toLocaleString("en-NG")} received. Your full commitment is complete — active equity: ${newEquityPct.toFixed(3)}%.`
       : `Payment of ₦${amount.toLocaleString("en-NG")} received. Total paid: ₦${newPaidAmount.toLocaleString("en-NG")} / ₦${committedAmount.toLocaleString("en-NG")}. Outstanding: ₦${outstanding.toLocaleString("en-NG")}. Active equity: ${newEquityPct.toFixed(3)}%.`;
 
-    db.from("partner_notifications").insert({
-      partner_id: partnerId,
-      type: "general",
-      title: isComplete ? "Investment Complete — Full Equity Active" : "Payment Received",
-      body,
-      read: false,
-    }).then(null, console.error);
-  }
+  db.from("partner_notifications").insert({
+    partner_id: partnerId,
+    type: "general",
+    title: isFirstPayment ? "Welcome to Mizark Global Partnership" : isComplete ? "Investment Complete — Full Equity Active" : "Payment Received",
+    body: notifBody,
+    read: false,
+  }).then(null, console.error);
+
+  // Receipt URL for email buttons
+  const receiptUrl = `${APP_URL}/api/admin/partners/${partnerId}/receipt?installment_id=${installment.id}`;
+
+  // Emails — fire-and-forget, don't block the response
+  (async () => {
+    try {
+      if (isFirstPayment) {
+        // Generate magic link so partner can set up their account / access dashboard
+        const adminDb = (await import("@/lib/supabase/server")).createAdminClient();
+        const { data: linkData } = await adminDb.auth.admin.generateLink({
+          type: "magiclink",
+          email: partner.email,
+          options: { redirectTo: `${APP_URL}/api/auth/callback?next=/setup-account` },
+        });
+        await sendWelcomePartner({
+          name: partner.name,
+          email: partner.email,
+          equityPct: newEquityPct,
+          amount,
+          setupUrl: linkData?.properties?.action_link,
+        });
+      } else {
+        // Subsequent payment — send confirmation with dashboard link
+        await sendPaymentConfirmation({
+          name: partner.name,
+          email: partner.email,
+          amount,
+          totalPaid: newPaidAmount,
+          committedAmount,
+          activeEquityPct: newEquityPct,
+          committedEquityPct,
+          isComplete,
+          installmentReceiptUrl: receiptUrl,
+        });
+      }
+    } catch (e) {
+      console.error("[installment] partner email error:", e);
+    }
+
+    // Admin alert on every payment
+    try {
+      await sendAdminPaymentAlert({
+        partnerName: partner.name,
+        partnerEmail: partner.email,
+        amount,
+        totalPaid: newPaidAmount,
+        committedAmount,
+        activeEquityPct: newEquityPct,
+        method,
+        reference,
+        isFirstPayment,
+        isComplete,
+      });
+    } catch (e) {
+      console.error("[installment] admin alert error:", e);
+    }
+  })();
 
   return {
     installment,
