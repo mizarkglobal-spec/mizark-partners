@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePartner } from "@/lib/auth";
+import { sendStakeIncreaseConfirmation, sendStakeIncreaseAlert } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const auth = await requirePartner(req);
@@ -12,8 +13,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Minimum additional investment is ₦100,000" }, { status: 400 });
   }
 
-  // Store as a notification to admin (simple approach without new table)
-  // The admin will see it and can manually adjust the partner's equity
+  // Admin in-app notification
   await db.from("partner_notifications").insert({
     partner_id: partner.id,
     type: "general",
@@ -22,8 +22,28 @@ export async function POST(req: NextRequest) {
     read: false,
   });
 
-  // Also send a notification to admin via their own record if any
-  // For now, we just log it — admin sees it in notifications
+  // Partner confirmation (in-app)
+  await db.from("partner_notifications").insert({
+    partner_id: partner.id,
+    type: "general",
+    title: "Stake Increase Request Received",
+    body: `Your request to increase your stake by ₦${Number(additional_amount).toLocaleString("en-NG")} has been received. Our team will be in touch shortly.`,
+    read: false,
+  }).catch(console.error);
+
+  // Emails
+  await sendStakeIncreaseConfirmation({
+    name: partner.name,
+    email: partner.email,
+    amount: Number(additional_amount),
+  }).catch(console.error);
+
+  await sendStakeIncreaseAlert({
+    name: partner.name,
+    email: partner.email,
+    amount: Number(additional_amount),
+    message: message || undefined,
+  }).catch(console.error);
 
   return NextResponse.json({ ok: true });
 }

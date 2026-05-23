@@ -34,6 +34,15 @@ export async function POST(
       .update({ notes: existingNotes } as any)
       .eq("id", partner.id);
 
+    // In-app confirmation for partner
+    await db.from("partner_notifications").insert({
+      partner_id: partner.id,
+      type: "general",
+      title: "Payment Proof Received",
+      body: `Your bank transfer details have been received. Our team will verify and activate your account shortly. JazakAllah Khair for your patience.`,
+      read: false,
+    }).catch(console.error);
+
     // Notify admin
     const adminEmail = process.env.ADMIN_EMAIL;
     if (adminEmail) {

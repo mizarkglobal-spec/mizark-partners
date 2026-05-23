@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
+import { sendAnnouncementEmail } from "@/lib/email";
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdmin(req);
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
   // Create notifications for all active partners
   const { data: partners } = await db
     .from("partners")
-    .select("id")
+    .select("id, name, email")
     .eq("status", "active");
 
   if (partners && partners.length > 0) {
@@ -48,6 +49,12 @@ export async function POST(req: NextRequest) {
       read: false,
     }));
     await db.from("partner_notifications").insert(notifications).catch(console.error);
+
+    // Email broadcast
+    for (const p of partners) {
+      sendAnnouncementEmail({ name: p.name, email: p.email, title, body })
+        .catch(console.error);
+    }
   }
 
   return NextResponse.json({ ok: true, announcement });

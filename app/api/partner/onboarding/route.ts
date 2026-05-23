@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { sendOnboardingCompleteAlert } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -29,6 +30,9 @@ export async function POST(req: NextRequest) {
 
   if (!partner) return NextResponse.json({ error: "Partner not found" }, { status: 404 });
 
+  // Fetch full partner record for notifications
+  const { data: fullPartner } = await db.from("partners").select("name, email").eq("id", partner.id).maybeSingle();
+
   const { error } = await db
     .from("partners")
     .update({
@@ -38,6 +42,25 @@ export async function POST(req: NextRequest) {
     .eq("id", partner.id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // In-app notification for partner
+  db.from("partner_notifications").insert({
+    partner_id: partner.id,
+    type: "general",
+    title: "KYC Profile Submitted",
+    body: "Your profile information has been received. Our team will review it shortly. JazakAllah Khair!",
+    read: false,
+  }).then(null, console.error);
+
+  // Admin alert
+  if (fullPartner) {
+    sendOnboardingCompleteAlert({
+      name: fullPartner.name,
+      email: fullPartner.email,
+      partnerId: partner.id,
+    }).catch(console.error);
+  }
+
   return NextResponse.json({ ok: true });
 }
 

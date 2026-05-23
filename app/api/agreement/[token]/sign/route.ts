@@ -52,6 +52,15 @@ export async function POST(
       .update({ status: "agreement_signed" } as any)
       .eq("id", partner.id);
 
+    // In-app notification for partner
+    await db.from("partner_notifications").insert({
+      partner_id: partner.id,
+      type: "general",
+      title: "Agreement Signed — Awaiting Payment",
+      body: `JazakAllah Khair! Your Musharakah agreement has been received. Please complete your investment payment of ₦${Number(partner.investment_amount).toLocaleString("en-NG")} to activate your equity stake.`,
+      read: false,
+    }).catch(console.error);
+
     // Notify admin
     const adminEmail = process.env.ADMIN_EMAIL;
     if (adminEmail) {

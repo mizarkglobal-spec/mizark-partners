@@ -262,6 +262,110 @@ export async function sendAdminPaymentAlert(opts: {
   });
 }
 
+// ── Onboarding / KYC complete (admin alert) ────────────────────────────────
+export async function sendOnboardingCompleteAlert(opts: { name: string; email: string; partnerId: string }) {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) return;
+  const adminUrl = `${APP_URL}/admin/partners`;
+  await sendEmail({
+    to: adminEmail,
+    subject: `[Mizark] KYC complete — ${opts.name}`,
+    text: `${opts.name} (${opts.email}) has completed their KYC onboarding and submitted their profile information.\n\nReview in admin panel: ${adminUrl}`,
+    html: baseEmail(`
+      <p style="font-size:16px;margin-top:0">KYC Onboarding Complete</p>
+      <p style="color:#6b7280"><strong>${opts.name}</strong> (${opts.email}) has submitted their KYC information.</p>
+      <p style="margin:24px 0"><a href="${adminUrl}" style="display:inline-block;background:#1a3a2a;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:600;font-size:13px">Review in Admin Panel →</a></p>
+      <p style="color:#9ca3af;font-size:12px">This is an automated notification from the Mizark Global partner portal.</p>
+    `),
+  });
+}
+
+// ── Distribution created (partner) ─────────────────────────────────────────
+export async function sendDistributionCreated(opts: { name: string; email: string; amount: number; period: string }) {
+  const dashUrl = `${APP_URL}/dashboard/returns`;
+  const fmtN = (n: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);
+  await sendEmail({
+    to: opts.email,
+    subject: `Your ${opts.period} distribution has been calculated — ${fmtN(opts.amount)}`,
+    text: `Assalamu Alaikum ${opts.name},\n\nYour ${opts.period} profit distribution of ${fmtN(opts.amount)} has been calculated and is pending payment. You will receive a separate notification once it has been transferred to your account.\n\nView returns: ${dashUrl}\n\n— Mizark Global Team`,
+    html: baseEmail(`
+      <p style="font-size:16px;margin-top:0">Assalamu Alaikum <strong>${opts.name}</strong>,</p>
+      <p style="color:#6b7280">Alhamdulillah! Your <strong>${opts.period}</strong> profit distribution has been calculated.</p>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:24px;margin:24px 0;text-align:center">
+        <p style="margin:0 0 4px;color:#6b7280;font-size:13px">${opts.period} Distribution (Pending)</p>
+        <p style="margin:0;font-size:32px;font-weight:700;color:#16a34a">${fmtN(opts.amount)}</p>
+      </div>
+      <p style="color:#6b7280;font-size:14px">This distribution is currently <strong>pending payment</strong>. You will receive another notification once it has been sent to your registered bank account.</p>
+      <p style="margin:24px 0"><a href="${dashUrl}" style="display:inline-block;background:#1a3a2a;color:#fff;padding:13px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:14px">View Returns Dashboard →</a></p>
+      <p style="color:#9ca3af;font-size:13px;margin-top:32px">— Mizark Global Partnership Team</p>
+    `),
+  });
+}
+
+// ── Announcement email (partner broadcast) ──────────────────────────────────
+export async function sendAnnouncementEmail(opts: { name: string; email: string; title: string; body: string }) {
+  const dashUrl = `${APP_URL}/announcements`;
+  await sendEmail({
+    to: opts.email,
+    subject: `[Mizark Update] ${opts.title}`,
+    text: `Assalamu Alaikum ${opts.name},\n\n${opts.title}\n\n${opts.body}\n\nView all announcements: ${dashUrl}\n\n— Mizark Global Team`,
+    html: baseEmail(`
+      <p style="font-size:16px;margin-top:0">Assalamu Alaikum <strong>${opts.name}</strong>,</p>
+      <div style="background:#f9fafb;border-left:3px solid #40916c;padding:16px 20px;margin:20px 0;border-radius:0 8px 8px 0">
+        <p style="margin:0 0 8px;font-weight:700;font-size:15px;color:#111827">${opts.title}</p>
+        <p style="margin:0;font-size:14px;color:#374151;line-height:1.6">${opts.body.replace(/\n/g, "<br>")}</p>
+      </div>
+      <p style="margin:24px 0"><a href="${dashUrl}" style="display:inline-block;background:#1a3a2a;color:#fff;padding:13px 28px;border-radius:10px;text-decoration:none;font-weight:600;font-size:14px">View All Announcements →</a></p>
+      <p style="color:#9ca3af;font-size:13px;margin-top:32px">— Mizark Global Partnership Team</p>
+    `),
+  });
+}
+
+// ── Stake increase request ──────────────────────────────────────────────────
+export async function sendStakeIncreaseConfirmation(opts: { name: string; email: string; amount: number }) {
+  const fmtN = (n: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);
+  await sendEmail({
+    to: opts.email,
+    subject: "Stake increase request received — Mizark Global",
+    text: `Assalamu Alaikum ${opts.name},\n\nYour request to increase your stake by ${fmtN(opts.amount)} has been received. Our team will review and get back to you shortly.\n\n— Mizark Global Team`,
+    html: baseEmail(`
+      <p style="font-size:16px;margin-top:0">Assalamu Alaikum <strong>${opts.name}</strong>,</p>
+      <p style="color:#6b7280">We have received your request to increase your partnership stake.</p>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin:24px 0">
+        <p style="margin:0 0 8px;font-weight:600;color:#15803d;font-size:13px;text-transform:uppercase;letter-spacing:0.5px">Request Received</p>
+        <p style="margin:0;font-size:14px;color:#374151">Additional investment: <strong>${fmtN(opts.amount)}</strong></p>
+      </div>
+      <p style="color:#6b7280;font-size:14px">Our team will review your request and reach out to discuss the next steps. JazakAllah Khair for your continued trust.</p>
+      <p style="color:#9ca3af;font-size:13px;margin-top:32px">— Mizark Global Partnership Team</p>
+    `),
+  });
+}
+
+export async function sendStakeIncreaseAlert(opts: { name: string; email: string; amount: number; message?: string }) {
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (!adminEmail) return;
+  const fmtN = (n: number) => new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);
+  const adminUrl = `${APP_URL}/admin/partners`;
+  await sendEmail({
+    to: adminEmail,
+    subject: `[Mizark] Stake increase request — ${opts.name} wants to add ${fmtN(opts.amount)}`,
+    text: `${opts.name} (${opts.email}) has requested to increase their stake by ${fmtN(opts.amount)}.\n\n${opts.message ? `Their message: "${opts.message}"\n\n` : ""}Review in admin panel: ${adminUrl}`,
+    html: baseEmail(`
+      <p style="font-size:16px;margin-top:0">Stake Increase Request</p>
+      <p style="color:#6b7280"><strong>${opts.name}</strong> (${opts.email}) wants to increase their stake.</p>
+      <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px;margin:20px 0">
+        <table style="font-size:14px;color:#374151;border-spacing:0;width:100%">
+          <tr><td style="padding:4px 0;color:#6b7280">Partner</td><td style="text-align:right;font-weight:600">${opts.name}</td></tr>
+          <tr><td style="padding:4px 0;color:#6b7280">Additional Amount</td><td style="text-align:right;font-weight:700;font-size:16px">${fmtN(opts.amount)}</td></tr>
+          ${opts.message ? `<tr><td style="padding:4px 0;color:#6b7280;vertical-align:top">Message</td><td style="text-align:right;font-style:italic">${opts.message}</td></tr>` : ""}
+        </table>
+      </div>
+      <p style="margin:20px 0"><a href="${adminUrl}" style="display:inline-block;background:#1a3a2a;color:#fff;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:600;font-size:13px">Open Admin Panel →</a></p>
+      <p style="color:#9ca3af;font-size:12px">This is an automated notification from the Mizark Global partner portal.</p>
+    `),
+  });
+}
+
 // ── Admin invite ────────────────────────────────────────────────────────────
 export async function sendAdminInvite(opts: { name?: string; email: string; invitedBy: string; loginUrl: string }) {
   const displayName = opts.name || opts.email;

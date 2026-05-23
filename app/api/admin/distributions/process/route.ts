@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
+import { sendDistributionCreated } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   const auth = await requireAdmin(req);
@@ -76,6 +77,18 @@ export async function POST(req: NextRequest) {
   }));
 
   await db.from("partner_notifications").insert(notifications).catch(console.error);
+
+  // Email each partner
+  const { data: partnerDetails } = await db
+    .from("partners")
+    .select("id, name, email, equity_pct")
+    .eq("status", "active");
+
+  for (const p of partnerDetails ?? []) {
+    const amount = Math.floor(quarterNetProfit * (Number(p.equity_pct) / 100));
+    sendDistributionCreated({ name: p.name, email: p.email, amount, period: quarter })
+      .catch(console.error);
+  }
 
   return NextResponse.json({ ok: true, count: records.length, quarter_net_profit: quarterNetProfit });
 }
