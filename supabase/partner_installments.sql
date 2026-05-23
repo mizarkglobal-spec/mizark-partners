@@ -9,12 +9,13 @@ ALTER TABLE partners
   ADD COLUMN IF NOT EXISTS payment_status   text DEFAULT 'awaiting_first'
     CHECK (payment_status IN ('awaiting_first', 'partial', 'complete', 'defaulted'));
 
--- 2. Backfill: existing active partners are fully paid
+-- 2. Backfill: set committed for all; paid_amount only for already-active partners
 UPDATE partners
 SET
   committed_amount      = investment_amount,
-  paid_amount           = investment_amount,
+  paid_amount           = CASE WHEN status = 'active' THEN investment_amount ELSE 0 END,
   equity_committed_pct  = equity_pct,
+  equity_pct            = CASE WHEN status = 'active' THEN equity_pct ELSE 0 END,
   payment_status        = CASE
                             WHEN status = 'active' THEN 'complete'
                             ELSE 'awaiting_first'
