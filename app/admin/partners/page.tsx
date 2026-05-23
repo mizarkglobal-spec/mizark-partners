@@ -102,6 +102,7 @@ export default function AdminPartnersPage() {
   const [logPaymentPartnerId, setLogPaymentPartnerId] = useState<string | null>(null);
   const [logForm, setLogForm] = useState({ ...EMPTY_LOG_FORM });
   const [loggingPayment, setLoggingPayment] = useState(false);
+  const [resendingNotif, setResendingNotif] = useState<string | null>(null);
 
   useEffect(() => {
     loadPartners();
@@ -196,6 +197,21 @@ export default function AdminPartnersPage() {
       loadPartners();
     } catch (e: any) { alert(e.message); }
     finally { setAdding(false); }
+  }
+
+  async function handleResendNotification(partnerId: string, installmentId: string) {
+    setResendingNotif(installmentId);
+    try {
+      const res = await fetch(`/api/admin/partners/${partnerId}/payment/resend`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ installment_id: installmentId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.errors?.join(", ") ?? data.error);
+      alert(`✓ Notifications resent to ${data.partner_email} and admin`);
+    } catch (e: any) { alert(e.message); }
+    finally { setResendingNotif(null); }
   }
 
   async function handleLogPayment() {
@@ -486,6 +502,7 @@ export default function AdminPartnersPage() {
                                           <th className="text-left pb-2">Reference</th>
                                           <th className="text-left pb-2">Notes</th>
                                           <th className="text-left pb-2">Receipt</th>
+                                          <th className="text-left pb-2">Notify</th>
                                         </tr>
                                       </thead>
                                       <tbody>
@@ -496,7 +513,7 @@ export default function AdminPartnersPage() {
                                             <td className="py-2 pr-4 text-white/50">{METHOD_LABEL[inst.method] ?? inst.method}</td>
                                             <td className="py-2 pr-4 text-white/40">{inst.reference ?? "—"}</td>
                                             <td className="py-2 pr-4 text-white/40">{inst.notes ?? "—"}</td>
-                                            <td className="py-2">
+                                            <td className="py-2 pr-4">
                                               <a
                                                 href={`/api/admin/partners/${p.id}/receipt?installment_id=${inst.id}`}
                                                 target="_blank" rel="noopener noreferrer"
@@ -504,6 +521,15 @@ export default function AdminPartnersPage() {
                                               >
                                                 Receipt
                                               </a>
+                                            </td>
+                                            <td className="py-2">
+                                              <button
+                                                onClick={() => handleResendNotification(p.id, inst.id)}
+                                                disabled={resendingNotif === inst.id}
+                                                className="text-white/40 hover:text-[#74c69d] transition-colors text-xs underline disabled:opacity-40"
+                                              >
+                                                {resendingNotif === inst.id ? "Sending…" : "Resend"}
+                                              </button>
                                             </td>
                                           </tr>
                                         ))}
