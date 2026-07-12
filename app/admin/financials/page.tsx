@@ -123,8 +123,37 @@ function TotalRow({ label, lm, ld, sh, total, accent }: {
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
+interface LeadashSync {
+  id: string;
+  period_month: string;
+  payload: {
+    revenue?: Record<string, number>;
+    total_revenue?: number;
+    total_cogs?: number;
+    total_opex?: number;
+    total_tax_expense?: number;
+    net_profit?: number;
+    transaction_count?: number;
+  };
+  status: "pending" | "approved" | "rejected" | "stale";
+  synced_at: string;
+  approved_by: string | null;
+  approved_at: string | null;
+  rejection_note: string | null;
+}
+
+const SYNC_STATUS_STYLES: Record<LeadashSync["status"], string> = {
+  pending:  "bg-[#d4a843]/15 text-[#d4a843]",
+  approved: "bg-[#74c69d]/15 text-[#74c69d]",
+  rejected: "bg-[#f87171]/15 text-[#f87171]",
+  stale:    "bg-white/10 text-white/40",
+};
+
 export default function FinancialsPage() {
-  const [tab, setTab] = useState<"dashboard" | "ledger" | "tax">("dashboard");
+  const [tab, setTab] = useState<"dashboard" | "ledger" | "tax" | "syncs">("dashboard");
+  const [syncs, setSyncs] = useState<LeadashSync[]>([]);
+  const [syncsLoading, setSyncsLoading] = useState(false);
+  const [syncActing, setSyncActing] = useState<string | null>(null);
   const [period, setPeriod] = useState(todayYYYYMM());
   const [txs, setTxs] = useState<FinancialTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -148,6 +177,44 @@ export default function FinancialsPage() {
   }, [period]);
 
   useEffect(() => { loadTxs(); }, [loadTxs]);
+
+  const loadSyncs = useCallback(async () => {
+    setSyncsLoading(true);
+    try {
+      const r = await fetch("/api/admin/leadash-syncs");
+      const d = await r.json();
+      setSyncs(d.syncs ?? []);
+    } finally {
+      setSyncsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { if (tab === "syncs") loadSyncs(); }, [tab, loadSyncs]);
+
+  async function handleSyncAction(id: string, action: "approve" | "reject") {
+    let note: string | undefined;
+    if (action === "reject") {
+      note = window.prompt("Rejection note (why are these figures not ready for investors)?") ?? undefined;
+      if (note === undefined) return;
+    } else if (!window.confirm("Approve this month's Leadash figures for investor reporting?")) {
+      return;
+    }
+    setSyncActing(id);
+    try {
+      const r = await fetch("/api/admin/leadash-syncs", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ id, action, note }),
+      });
+      if (!r.ok) {
+        const d = await r.json().catch(() => ({}));
+        alert(d.error ?? "Action failed");
+      }
+      await loadSyncs();
+    } finally {
+      setSyncActing(null);
+    }
+  }
 
   const summary = useMemo(() => computePeriodSummary(txs), [txs]);
   const { learn_mizark: lm, leadash: ld, shared: sh, total } = summary.divisions;
@@ -277,11 +344,11 @@ export default function FinancialsPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 bg-[#0a1f15] rounded-xl p-1 w-fit">
-        {(["dashboard", "ledger", "tax"] as const).map((t) => (
+        {(["dashboard", "ledger", "tax", "syncs"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={cls("px-5 py-2 rounded-lg text-sm font-medium transition-colors",
               tab === t ? "bg-[#1a3a2a] text-white" : "text-white/40 hover:text-white/70")}>
-            {t === "dashboard" ? "P&L" : t === "tax" ? "Tax & Compliance" : "Ledger"}
+            {t === "dashboard" ? "P&L" : t === "tax" ? "Tax & Compliance" : t === "syncs" ? "Leadash Syncs" : "Ledger"}
           </button>
         ))}
       </div>
@@ -510,6 +577,81 @@ export default function FinancialsPage() {
                 ))}
                 <p className="text-white/25 text-xs">30% profit pool is the system default. Process actual distributions on the Distributions page — which now reads from this ledger.</p>
               </div>
+            </div>
+          )}
+
+          {/* ── LEADASH SYNCS ────────────────────────────────────────────── */}
+          {tab === "syncs" && (
+            <div className="space-y-4">
+              <p className="text-white/40 text-xs max-w-2xl">
+                Closed-month summaries pushed automatically from Leadash when the accountant signs off a month.
+                Nothing here reaches investor reports until you approve it — approval writes the figures into
+                Monthly Financials. A re-synced month (numbers changed after a reopen) returns to pending.
+              </p>
+              {syncsLoading ? (
+                <div className="flex justify-center py-16">
+                  <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                </div>
+              ) : syncs.length === 0 ? (
+                <div className="bg-[#1a3a2a] border border-white/10 rounded-2xl p-12 text-center">
+                  <p className="text-white/30 text-sm">No syncs from Leadash yet — they appear when a month is closed there.</p>
+                </div>
+              ) : (
+                <div className="bg-[#1a3a2a] border border-white/10 rounded-2xl overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-white/10">
+                          {["Month", "Revenue", "COGS", "OpEx", "Net Profit", "Status", "Synced", ""].map((h) => (
+                            <th key={h} className="text-left px-4 py-3 text-white/40 font-medium text-xs uppercase whitespace-nowrap">{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {syncs.map((s) => (
+                          <tr key={s.id} className="border-b border-white/5">
+                            <td className="px-4 py-3 text-white text-sm font-medium whitespace-nowrap">{s.period_month.slice(0, 7)}</td>
+                            <td className="px-4 py-3 text-[#74c69d] text-sm">{fmt(s.payload.total_revenue ?? 0)}</td>
+                            <td className="px-4 py-3 text-white/60 text-sm">{fmt(s.payload.total_cogs ?? 0)}</td>
+                            <td className="px-4 py-3 text-white/60 text-sm">{fmt(s.payload.total_opex ?? 0)}</td>
+                            <td className="px-4 py-3 text-sm font-semibold" style={{ color: (s.payload.net_profit ?? 0) >= 0 ? "#a78bfa" : "#f87171" }}>
+                              {fmt(s.payload.net_profit ?? 0)}
+                            </td>
+                            <td className="px-4 py-3">
+                              <span className={cls("px-2 py-0.5 rounded-md text-[11px] font-semibold", SYNC_STATUS_STYLES[s.status])}>
+                                {s.status}
+                              </span>
+                              {s.rejection_note && <p className="text-white/25 text-[10px] mt-1 max-w-[160px]">{s.rejection_note}</p>}
+                            </td>
+                            <td className="px-4 py-3 text-white/30 text-xs whitespace-nowrap">
+                              {new Date(s.synced_at).toLocaleDateString()}
+                              {s.approved_by && <p className="text-white/20 text-[10px]">by {s.approved_by}</p>}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              {s.status === "pending" && (
+                                <div className="flex gap-2">
+                                  <button
+                                    onClick={() => handleSyncAction(s.id, "approve")}
+                                    disabled={syncActing === s.id}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#74c69d]/15 text-[#74c69d] hover:bg-[#74c69d]/25 disabled:opacity-40 transition-colors">
+                                    {syncActing === s.id ? "…" : "Approve"}
+                                  </button>
+                                  <button
+                                    onClick={() => handleSyncAction(s.id, "reject")}
+                                    disabled={syncActing === s.id}
+                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#f87171]/10 text-[#f87171] hover:bg-[#f87171]/20 disabled:opacity-40 transition-colors">
+                                    Reject
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </>
